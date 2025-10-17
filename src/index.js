@@ -16,8 +16,9 @@ const port = process.env.PORT || 3000;
 const node_env = process.env.NODE_ENV || "development";
 
 dotenv.config({
-  path: node_env === "production" ? ".env.prod" : ".env.local",
-});
+  // path: node_env === "production" ? ".env.prod" : ".env.local",
+  path: ".env.prod"
+}); 
 
 connectDB();
 
@@ -50,7 +51,7 @@ app.use(
   cors({
     origin: [
       process.env.CLIENT_URL || "http://localhost:5173",
-      'https://admin.cabnex.in',
+      "https://admin.cabnex.in",
       'https://dev.cabnex.in'
 
     ],
