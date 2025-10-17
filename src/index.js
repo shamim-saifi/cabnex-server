@@ -48,7 +48,11 @@ app.use(
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: [
+      process.env.CLIENT_URL || "http://localhost:5173",
+      "https://82.112.227.133",
+      "https://admin.82.112.227.133",
+    ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   })
