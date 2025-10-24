@@ -47,13 +47,21 @@ const register = asyncHandler(async (req, res, next) => {
   if (!user) {
     return next(new ErrorResponse(400, "User registration failed"));
   }
-  const fullName = user.fullName;
+  const userData = {
+    _id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    mobile: user.mobile,
+    acceptedTerms: user.acceptedTerms,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+  };
 
 
   res
     .status(201)
     .cookie("cabnex_token", generateToken(user._id, "30d"), cookieOptions)
-    .json(new SuccessResponse(201, "User registered successfully", fullName));
+    .json(new SuccessResponse(201, "User registered successfully", userData));
 });
 
 // Login user
@@ -85,10 +93,20 @@ const login = asyncHandler(async (req, res, next) => {
   if (!(await user.isPasswordCorrect(password))) {
     return next(new ErrorResponse(401, "Invalid email or password"));
   }
-  const fullName = user.fullName;
+
+  const userData = {
+    _id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    mobile: user.mobile,
+    acceptedTerms: user.acceptedTerms,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+  };
+
   return res
     .cookie("cabnex_token", generateToken(user._id, "30d"), cookieOptions)
-    .json(new SuccessResponse(200, "User logged in successfully", fullName));
+    .json(new SuccessResponse(200, "User logged in successfully", userData));
 });
 
 // Forget password
