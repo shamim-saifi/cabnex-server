@@ -47,11 +47,13 @@ const register = asyncHandler(async (req, res, next) => {
   if (!user) {
     return next(new ErrorResponse(400, "User registration failed"));
   }
+  const fullName = user.fullName;
+
 
   res
     .status(201)
     .cookie("cabnex_token", generateToken(user._id, "30d"), cookieOptions)
-    .json(new SuccessResponse(201, "User registered successfully"));
+    .json(new SuccessResponse(201, "User registered successfully", fullName));
 });
 
 // Login user
@@ -83,10 +85,10 @@ const login = asyncHandler(async (req, res, next) => {
   if (!(await user.isPasswordCorrect(password))) {
     return next(new ErrorResponse(401, "Invalid email or password"));
   }
-
+  const fullName = user.fullName;
   return res
     .cookie("cabnex_token", generateToken(user._id, "30d"), cookieOptions)
-    .json(new SuccessResponse(200, "User logged in successfully"));
+    .json(new SuccessResponse(200, "User logged in successfully", fullName));
 });
 
 // Forget password
@@ -252,9 +254,8 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
       : [...destinations, pickupLocation];
 
     const origin = `place_id:${pickupLocation}`;
-    const destination = `place_id:${
-      destinationsParams[destinationsParams.length - 1]
-    }`;
+    const destination = `place_id:${destinationsParams[destinationsParams.length - 1]
+      }`;
     const waypoints = destinationsParams
       .slice(0, -1)
       .map((p) => `place_id:${p}`)
@@ -300,7 +301,7 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
 
       const days = Math.ceil(
         (new Date(returnDateTime) - new Date(pickupDateTime)) /
-          (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24)
       );
 
       console.log(days, pickupDateTime, returnDateTime);
