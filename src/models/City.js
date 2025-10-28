@@ -19,6 +19,7 @@ const citySchema = new Schema({
       extraHourCharge: { type: Number, default: 0 },
       driverAllowance: { type: Number, default: 0 },
       nightCharge: { type: Number, default: 0 },
+      permitCharge: { type: Number, default: 0 },
       hillCharge: { type: Number, default: 0 },
       taxSlab: { type: Number, default: 0 },
       isActive: { type: Boolean, default: true },

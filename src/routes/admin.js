@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   addCarCategory,
+  addCarToCategory,
   addNewCategoryToCity,
   addNewCity,
   adminLogin,
@@ -8,15 +9,20 @@ import {
   allBookings,
   allUsers,
   allVendors,
+  assignVendorToBooking,
+  bookingStats,
   carStats,
   checkAdmin,
+  dashboardStats,
   deleteCarCategory,
   getAllCarCategories,
   getAllCars,
+  getBookingDetails,
   getCarDetails,
   getCities,
   getUserDetails,
   getVendorDetails,
+  rejectBooking,
   toggleCategoryStatusFromCity,
   updateACar,
   updateAVendor,
@@ -32,13 +38,19 @@ const router = Router();
 
 router.post("/login", adminLogin);
 router.get("/car-categories", getAllCarCategories);
+router.get("/dashboard-stats", dashboardStats);
 
 router.use(getAdminCookies);
 router.get("/check", checkAdmin);
 router.get("/user-stats", userStats);
 router.get("/users", allUsers);
 router.get("/users/:id", getUserDetails);
+router.get("/booking-stats", bookingStats);
 router.get("/bookings", allBookings);
+router.get("/bookings/:id", getBookingDetails);
+router.post("/bookings/:id/assign-vendor", assignVendorToBooking);
+router.post("/bookings/:id/reject-booking", rejectBooking);
+
 router.get("/vendor-stats", vendorStats);
 router.get("/vendors", allVendors);
 router.route("/vendors/:id").get(getVendorDetails).patch(updateAVendor);
@@ -70,6 +82,7 @@ router
     ]),
     updateCarCategory
   )
+  .patch(addCarToCategory)
   .delete(deleteCarCategory);
 
 // Car management routes

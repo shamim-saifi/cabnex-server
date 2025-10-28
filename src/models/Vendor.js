@@ -62,6 +62,7 @@ const vendorSchema = new Schema(
       public_id: { type: String, default: "" },
       url: { type: String, default: "" },
     },
+    bookings: [{ type: Types.ObjectId, ref: "Booking", default: [] }],
     isVerified: {
       type: String,
       enum: ["approved", "pending", "rejected"],

@@ -8,11 +8,7 @@ const carCategorySchema = new Schema({
   },
   carNames: {
     type: [String],
-    required: true,
-    validate: {
-      validator: (val) => val.length > 0,
-      message: "At least one car name is required",
-    },
+    default: [],
   },
   icon: {
     public_id: { type: String, required: true },
