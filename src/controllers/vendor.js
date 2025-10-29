@@ -12,7 +12,7 @@ import SuccessResponse from "../utils/SuccessResponse.js";
 const cookieOptions = {
   maxAge: 1000 * 60 * 60 * 24 * 30,
   httpOnly: true,
-  sameSite: "none",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   secure: process.env.NODE_ENV === "production",
 };
 
