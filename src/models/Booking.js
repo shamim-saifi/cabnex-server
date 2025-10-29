@@ -70,6 +70,10 @@ const bookingSchema = new Schema(
       type: Number,
       default: 0,
     },
+    type: {
+      type: String,
+      enum: ["one", "round", "multi"],
+    },
     status: {
       type: String,
       enum: ["pending", "inProgress", "confirmed", "cancelled"],

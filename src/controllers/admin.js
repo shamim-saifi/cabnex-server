@@ -245,8 +245,9 @@ const bookingStats = asyncHandler(async (_, res) => {
   const totalBookings = bookings.length;
   const ActiveBookings = bookings.filter(
     (b) =>
-      b.status === "inProgress" ||
-      new Date(b.returnDateTime) >= new Date(b.pickupDateTime)
+      (b.status === "inProgress" ||
+        new Date(b.returnDateTime) >= new Date(b.pickupDateTime)) &&
+      b.assignedVendor != null
   ).length;
   const pendingBookings = bookings.filter((b) => b.status === "pending").length;
 

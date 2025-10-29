@@ -6,6 +6,7 @@ import ErrorResponse from "../utils/ErrorResponse.js";
 import SuccessResponse from "../utils/SuccessResponse.js";
 import Transaction from "../models/Transaction.js";
 import axios from "axios";
+import { type } from "os";
 
 const getRazorpayKey = asyncHandler(async (req, res) => {
   res
@@ -77,8 +78,7 @@ const createRazorpayOrder = asyncHandler(async (req, res, next) => {
 
 const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
   try {
-    const { amount, razorpayPaymentId, razorpayOrderId, razorpaySignature } =
-      req.body;
+    const { razorpayPaymentId, razorpayOrderId, razorpaySignature } = req.body;
 
     // ✅ Verify signature
     const sign = razorpayOrderId + "|" + razorpayPaymentId;
@@ -104,22 +104,52 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
 
     const p = paymentData.data;
 
-    const newBooking = await Booking.create({
-      userId: req.user._id,
-      carCategory: req.body.carCategory,
-      serviceType: req.body.serviceType,
-      packageType: req.body.packageType,
-      packageId: req.body.packageId,
-      exactLocation: req.body.exactLocation,
-      pickupDateTime: req.body.pickupDateTime,
-      startLocation: req.body.startLocation,
-      destinations: req.body.destinations,
-      returnDateTime: req.body.returnDateTime,
-      distance: req.body.distance,
-      totalAmount: req.body.totalAmount,
-      recievedAmount: amount,
-      status: req.body.status,
-    });
+    let payload = {};
+
+    if (serviceType.toLowerCase() === "outstation") {
+      payload = {
+        userId: req.user._id,
+        carCategory: req.body.carCategory,
+        serviceType: req.body.serviceType,
+        exactLocation: req.body.exactLocation,
+        pickupDateTime: req.body.pickupDateTime,
+        startLocation: req.body.startLocation,
+        destinations: req.body.destinations,
+        returnDateTime: req.body.returnDateTime,
+        distance: req.body.distance,
+        totalAmount: req.body.totalAmount,
+        recievedAmount: p.amount / 100,
+        type: req.body.type,
+      };
+    } else if (serviceType.toLowerCase() === "rental") {
+      payload = {
+        userId: req.user._id,
+        carCategory: req.body.carCategory,
+        serviceType: req.body.serviceType,
+        exactLocation: req.body.exactLocation,
+        packageType: req.body.packageType,
+        packageId: req.body.packageId,
+        pickupDateTime: req.body.pickupDateTime,
+        startLocation: req.body.startLocation,
+        totalAmount: req.body.totalAmount,
+        recievedAmount: p.amount / 100,
+      };
+    } else if (serviceType.toLowerCase() === "transfer") {
+      payload = {
+        userId: req.user._id,
+        carCategory: req.body.carCategory,
+        serviceType: req.body.serviceType,
+        exactLocation: req.body.exactLocation,
+        packageType: req.body.packageType,
+        packageId: req.body.packageId,
+        pickupDateTime: req.body.pickupDateTime,
+        startLocation: req.body.startLocation,
+        totalAmount: req.body.totalAmount,
+        recievedAmount: p.amount / 100,
+      };
+    }
+
+    const newBooking = await Booking.create(payload);
 
     // Create Transaction entry
     const transaction = await Transaction.create({

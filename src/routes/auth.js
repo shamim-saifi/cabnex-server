@@ -25,7 +25,7 @@ router.put("/forget-password", forgetPassword);
 router.use(getAuthCookies);
 router.route("/me").get(getUser).put(updateDetails).delete(deleteUser);
 router.get("/bookings", getBookings);
-router.post("/bookings/:id", cancelBooking);
+router.delete("/bookings/:id", cancelBooking);
 router.post("/logout", logout);
 
 export default router;

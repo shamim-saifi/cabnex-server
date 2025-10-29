@@ -20,6 +20,10 @@ const cookieOptions = {
 const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
+  if (!user) {
+    return next(new ErrorResponse(404, "User not found"));
+  }
+
   res
     .status(200)
     .json(new SuccessResponse(200, "User retrieved successfully", { user }));
@@ -56,7 +60,6 @@ const register = asyncHandler(async (req, res, next) => {
     isActive: user.isActive,
     createdAt: user.createdAt,
   };
-
 
   res
     .status(201)
@@ -168,7 +171,7 @@ const deleteUser = asyncHandler(async (req, res, next) => {
 
 // Get user bookings
 const getBookings = asyncHandler(async (req, res) => {
-  const bookings = await Booking.find({ user: req.user._id });
+  const bookings = await Booking.find({ userId: req.user._id });
 
   res
     .status(200)
@@ -177,10 +180,11 @@ const getBookings = asyncHandler(async (req, res) => {
     );
 });
 
+// Cancel a booking
 const cancelBooking = asyncHandler(async (req, res, next) => {
   const booking = await Booking.findOne({
-    _id: req.params.id,
-    user: req.user._id,
+    bookingId: req.params.id,
+    userId: req.user._id,
   });
 
   if (!booking) {
@@ -207,6 +211,7 @@ const logout = asyncHandler(async (req, res) => {
     .json(new SuccessResponse(200, "Logged out successfully"));
 });
 
+// Search cars for trip
 const searchCarsForTrip = asyncHandler(async (req, res, next) => {
   const {
     pickupLocation,
@@ -272,8 +277,9 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
       : [...destinations, pickupLocation];
 
     const origin = `place_id:${pickupLocation}`;
-    const destination = `place_id:${destinationsParams[destinationsParams.length - 1]
-      }`;
+    const destination = `place_id:${
+      destinationsParams[destinationsParams.length - 1]
+    }`;
     const waypoints = destinationsParams
       .slice(0, -1)
       .map((p) => `place_id:${p}`)
@@ -319,7 +325,7 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
 
       const days = Math.ceil(
         (new Date(returnDateTime) - new Date(pickupDateTime)) /
-        (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24)
       );
 
       console.log(days, pickupDateTime, returnDateTime);
