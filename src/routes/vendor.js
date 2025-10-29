@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   addVendorCar,
+  dashboardStats,
   deleteVendorCar,
   forgetPassword,
   getVendor,
@@ -23,6 +24,7 @@ router.put("/forget-password", forgetPassword);
 
 // Protected routes
 router.use(getVendorCookies);
+
 router
   .route("/me")
   .get(getVendor)
@@ -34,6 +36,9 @@ router
     ]),
     updateVendorProfile
   );
+
+router.get("/dashboard", dashboardStats);
+
 router
   .route("/cars")
   .get(getVendorCars)

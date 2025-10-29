@@ -731,7 +731,9 @@ const getAllCars = asyncHandler(async (req, res, next) => {
         "make model vendor registrationNumber fuelType year status isVerified createdAt"
       )
       .populate("vendor", "company isVerified")
-      .sort("-1")
+      .sort({
+        createdAt: -1,
+      })
       .skip(skip)
       .limit(resultPerPage),
     Car.countDocuments(),

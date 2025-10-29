@@ -7,6 +7,7 @@ import SuccessResponse from "../utils/SuccessResponse.js";
 import Transaction from "../models/Transaction.js";
 import axios from "axios";
 import { type } from "os";
+import { log } from "console";
 
 const getRazorpayKey = asyncHandler(async (req, res) => {
   res
@@ -78,7 +79,14 @@ const createRazorpayOrder = asyncHandler(async (req, res, next) => {
 
 const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
   try {
-    const { razorpayPaymentId, razorpayOrderId, razorpaySignature } = req.body;
+    const {
+      razorpayPaymentId,
+      razorpayOrderId,
+      razorpaySignature,
+      serviceType,
+    } = req.body;
+
+    console.log(req.body);
 
     // ✅ Verify signature
     const sign = razorpayOrderId + "|" + razorpayPaymentId;
@@ -150,6 +158,10 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
     }
 
     const newBooking = await Booking.create(payload);
+
+    if (!newBooking) {
+      return next(new ErrorResponse(500, "Failed to create booking"));
+    }
 
     // Create Transaction entry
     const transaction = await Transaction.create({

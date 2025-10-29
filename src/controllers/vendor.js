@@ -1,3 +1,4 @@
+import Booking from "../models/Booking.js";
 import Car from "../models/Car.js";
 import Vendor from "../models/Vendor.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -16,6 +17,7 @@ const cookieOptions = {
   secure: process.env.NODE_ENV === "production",
 };
 
+// Get vendor details
 const getVendor = asyncHandler(async (req, res, next) => {
   const vendorId = req.vendorId;
 
@@ -240,6 +242,7 @@ const updateVendorCar = asyncHandler(async (req, res, next) => {
     .json(new SuccessResponse(200, "Car updated successfully", updatedCar));
 });
 
+// Delete vendor car
 const deleteVendorCar = asyncHandler(async (req, res, next) => {
   const vendorId = req.vendorId;
   const { id } = req.params;
@@ -257,6 +260,46 @@ const deleteVendorCar = asyncHandler(async (req, res, next) => {
   res.status(200).json(new SuccessResponse(200, "Car deleted successfully"));
 });
 
+const dashboardStats = asyncHandler(async (req, res, next) => {
+  const [bookings, cars] = await Promise.all([
+    Booking.find({ assignedVendor: req.vendorId }).sort({
+      createdAt: -1,
+    }),
+    Car.find({ vendor: req.vendorId }),
+  ]);
+
+  const totalCars = cars.length;
+
+  const approvedCars = cars.filter(
+    (car) => car.isVerified === "approved"
+  ).length;
+
+  const pendingCars = cars.filter((car) => car.isVerified === "pending").length;
+
+  const completedBookings = bookings.filter(
+    (booking) => booking.status === "completed"
+  ).length;
+
+  const upcomingBookings = bookings.filter(
+    (booking) =>
+      booking.status === "inProgress" &&
+      new Date(booking.pickupDateTime) > new Date()
+  ).length;
+
+  const recentBookings = bookings.slice(0, 5);
+
+  res.status(200).json(
+    new SuccessResponse(200, "Vendor dashboard Statistics", {
+      totalCars,
+      approvedCars,
+      pendingCars,
+      completedBookings,
+      upcomingBookings,
+      recentBookings,
+    })
+  );
+});
+
 export {
   addVendorCar,
   deleteVendorCar,
@@ -268,4 +311,5 @@ export {
   updateVendorProfile,
   vendorLogin,
   vendorRegister,
+  dashboardStats,
 };
