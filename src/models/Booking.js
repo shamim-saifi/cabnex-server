@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import mongoose, { model, Schema, Types } from "mongoose";
 
 const bookingSchema = new Schema(
@@ -70,9 +71,9 @@ const bookingSchema = new Schema(
       type: Number,
       default: 0,
     },
-    type: {
+    tripType: {
       type: String,
-      enum: ["one", "round", "multi"],
+      enum: ["one", "round"],
     },
     status: {
       type: String,
@@ -94,10 +95,8 @@ const bookingSchema = new Schema(
 );
 
 bookingSchema.pre("save", async function (next) {
-  if (!this.bookingId) {
-    const count = await this.constructor.countDocuments();
-    this.bookingId = `CN-${String(count + 1).padStart(5, "0")}`;
-  }
+  if (this.bookingId) return next();
+  this.bookingId = `CN-${randomUUID().slice(0, 8).toUpperCase()}`;
   next();
 });
 
