@@ -12,7 +12,7 @@ import {
   vendorRegister,
 } from "../controllers/vendor.js";
 import { getVendorCookies } from "../middlewares/authMiddleware.js";
-import { upload } from "../middlewares/mutler.js";
+import { createArrayUpload, upload } from "../middlewares/mutler.js";
 
 const router = Router();
 
@@ -37,11 +37,13 @@ router
 router
   .route("/cars")
   .get(getVendorCars)
-  .post(upload.array("images"), addVendorCar);
+  .post(createArrayUpload("images", 10), addVendorCar);
+
 router
   .route("/cars/:id")
-  .put(upload.array("images"), updateVendorCar)
+  .put(createArrayUpload("images", 10), updateVendorCar)
   .delete(deleteVendorCar);
+
 router.post("/logout", logoutVendor);
 
 export default router;

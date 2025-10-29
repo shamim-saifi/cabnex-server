@@ -1,6 +1,26 @@
+import { MulterError } from "multer";
+
 const errorMiddleware = (err, req, res, next) => {
   err.message ||= "Internal Server Error";
   err.statusCode ||= 500;
+
+  // Handle Multer file upload errors
+  if (err instanceof MulterError && err.code === "LIMIT_FILE_SIZE") {
+    const uploadedSize =
+      req?.file?.size ||
+      req?.files?.[0]?.size ||
+      parseInt(req.headers["content-length"] || 0);
+    const uploadedSizeMB = uploadedSize
+      ? (uploadedSize / (1024 * 1024)).toFixed(2)
+      : "?";
+
+    const limitMB = req.fileSizeLimit
+      ? (req.fileSizeLimit / (1024 * 1024)).toFixed(2)
+      : 5; // fallback if not set
+
+    err.message = `File size too large (${uploadedSizeMB}MB). Maximum allowed is ${limitMB}MB.`;
+    err.statusCode = 400;
+  }
 
   // Handle MongoDB duplicate key error
   if (err.code === 11000 && err.keyPattern) {
