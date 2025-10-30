@@ -184,6 +184,19 @@ const getVendorCars = asyncHandler(async (req, res, next) => {
     .json(new SuccessResponse(200, "Vendor cars retrieved successfully", cars));
 });
 
+// Get a vendor car
+const getAVendorCar = asyncHandler(async (req, res, next) => {
+  const vendorId = req.vendorId;
+  const { id } = req.params;
+  const car = await Car.findOne({ _id: id, vendor: vendorId });
+  if (!car) {
+    return next(new ErrorResponse(404, "Car not found"));
+  }
+  res
+    .status(200)
+    .json(new SuccessResponse(200, "Vendor car retrieved successfully", car));
+});
+
 // Add vendor car
 const addVendorCar = asyncHandler(async (req, res, next) => {
   const vendorId = req.vendorId;
@@ -301,6 +314,7 @@ const dashboardStats = asyncHandler(async (req, res, next) => {
 });
 
 export {
+  getAVendorCar,
   addVendorCar,
   deleteVendorCar,
   getVendor,

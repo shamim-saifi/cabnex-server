@@ -4,6 +4,7 @@ import {
   dashboardStats,
   deleteVendorCar,
   forgetPassword,
+  getAVendorCar,
   getVendor,
   getVendorCars,
   logoutVendor,
@@ -46,6 +47,7 @@ router
 
 router
   .route("/cars/:id")
+  .get(getAVendorCar)
   .put(createArrayUpload("images", 10), updateVendorCar)
   .delete(deleteVendorCar);
 
