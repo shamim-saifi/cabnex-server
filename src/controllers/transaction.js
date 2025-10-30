@@ -145,7 +145,12 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
       paymentMethod: p.method,
     });
 
+    const user = await User.findById(req.user._id);
+
     newBooking.transaction = transaction._id;
+    user.bookings.push(newBooking._id);
+
+    await user.save();
     await newBooking.save();
 
     return res.status(200).json(
