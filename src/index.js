@@ -16,8 +16,7 @@ const port = process.env.PORT || 3000;
 const node_env = process.env.NODE_ENV || "development";
 
 dotenv.config({
-  // path: node_env === "production" ? ".env.prod" : ".env.local",
-  path: ".env.prod"
+  path: node_env === "production" ? ".env.prod" : ".env.local",
 });
 
 connectDB();
@@ -52,10 +51,9 @@ app.use(
     origin: [
       process.env.CLIENT_URL || "http://localhost:5173",
       "https://admin.cabnex.in",
-      'https://dev.cabnex.in',
+      "https://dev.cabnex.in",
       "http://localhost:5173",
-      "http://localhost:5174"
-
+      "http://localhost:5174",
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,

@@ -10,14 +10,14 @@ const bookingSchema = new Schema(
     userId: {
       type: Types.ObjectId,
       ref: "User",
-      required: true,
+      required: [true, "User ID is required."],
     },
     carCategory: {
       type: String,
     },
     serviceType: {
       type: String,
-      required: true,
+      required: [true, "Service type is required."],
       enum: ["rental", "outstation", "transfer", "activity"],
     },
     packageType: {
@@ -30,20 +30,20 @@ const bookingSchema = new Schema(
     },
     exactLocation: {
       type: String,
-      required: true,
+      required: [true, "Exact location is required."],
     },
     pickupDateTime: {
       type: Date,
-      required: true,
+      required: [true, "Pickup date and time is required."],
     },
     startLocation: {
       place_id: {
         type: String,
-        required: true,
+        required: [true, "Start location place ID is required."],
       },
       address: {
         type: String,
-        required: true,
+        required: [true, "Start location address is required."],
       },
     },
     destinations: [

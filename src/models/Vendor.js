@@ -9,25 +9,25 @@ const vendorSchema = new Schema(
     },
     contactPerson: {
       type: String,
-      required: true,
+      required: [true, "Contact person is required."],
       trim: true,
     },
     company: {
       type: String,
       trim: true,
-      required: true,
+      required: [true, "Company name is required."],
     },
     email: {
       type: String,
-      required: true,
+      required: [true, "Email is required."],
       unique: true,
     },
     contactPhone: {
       type: String,
-      required: true,
+      required: [true, "Contact phone is required."],
       unique: true,
-      maxlength: 10,
-      minlength: 10,
+      maxlength: [10, "Contact phone cannot exceed 10 digits."],
+      minlength: [10, "Contact phone must be 10 digits."],
     },
     companyType: {
       type: String,
@@ -36,10 +36,10 @@ const vendorSchema = new Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: [true, "Password is required."],
       select: false,
-      minlength: 6,
-      maxlength: 64,
+      minlength: [6, "Password must be at least 6 characters long."],
+      maxlength: [64, "Password cannot exceed 64 characters."],
     },
     city: { type: String, default: "" },
     state: { type: String, default: "" },
@@ -48,7 +48,7 @@ const vendorSchema = new Schema(
     cars: [{ type: Types.ObjectId, ref: "Car" }],
     pan: {
       type: String,
-      required: true,
+      required: [true, "PAN is required."],
     },
     gst: {
       type: String,

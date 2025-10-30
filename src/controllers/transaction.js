@@ -6,8 +6,6 @@ import ErrorResponse from "../utils/ErrorResponse.js";
 import SuccessResponse from "../utils/SuccessResponse.js";
 import Transaction from "../models/Transaction.js";
 import axios from "axios";
-import { type } from "os";
-import { log } from "console";
 
 const getRazorpayKey = asyncHandler(async (req, res) => {
   res
@@ -46,37 +44,7 @@ const createRazorpayOrder = asyncHandler(async (req, res, next) => {
   }
 });
 
-/**
- * @route   POST /api/payment/verify
- * @desc    Verify Razorpay payment signature, create Booking & Transaction
- *
- * @body
- * {
- *   "amount": Number,                // Total amount in INR (same as order amount)
- *   "razorpayPaymentId": String,     // Payment ID returned by Razorpay
- *   "razorpayOrderId": String,       // Order ID created by your backend
- *   "razorpaySignature": String,     // Signature returned by Razorpay
- *
- *   // Booking details
- *   "carCategory": String,           // e.g. "Sedan", "SUV"
- *   "serviceType": String,           // e.g. "One-way", "Round-trip", "Local"
- *   "packageType": String,           // e.g. "4hr/40km", "8hr/80km"
- *   "packageId": String,             // ID of the selected package
- *   "exactLocation": String,         // User’s provided exact pickup address
- *   "pickupDateTime": String,           // e.g. "2025-10-20T10:30:00Z"
- *   "startLocation": String,         // e.g. "Delhi"
- *   "destinations": [String],        // e.g. ["Agra", "Mathura"]
- *   "returnDateTime": Number,                  // e.g. 2
- *   "distance": Number,              // in kilometers
- *   "totalAmount": Number,           // same as `amount`, used for reference
- *   "status": String,                // e.g. "confirmed"
- *   "city": String,                  // e.g. "Delhi"
- *   "bookingId": String              // Optional — if updating an existing booking
- * }
- *
- * @returns 200 { success: true, message, transaction }
- */
-
+// Verify Razorpay Payment
 const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
   try {
     const {
@@ -85,8 +53,6 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
       razorpaySignature,
       serviceType,
     } = req.body;
-
-    console.log(req.body);
 
     // ✅ Verify signature
     const sign = razorpayOrderId + "|" + razorpayPaymentId;
@@ -127,7 +93,7 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
         distance: req.body.distance,
         totalAmount: req.body.totalAmount,
         recievedAmount: p.amount / 100,
-        type: req.body.type,
+        tripType: req.body.oneWay ? "one" : "round",
       };
     } else if (serviceType.toLowerCase() === "rental") {
       payload = {

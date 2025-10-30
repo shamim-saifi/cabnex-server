@@ -5,35 +5,33 @@ const userSchema = new Schema(
   {
     fullName: {
       type: String,
-      required: true,
+      required: [true, "Full name is required."],
       trim: true,
     },
     email: {
       type: String,
-      required: true,
+      required: [true, "Email is required."],
       unique: true,
     },
     mobile: {
       type: String,
-      required: true,
+      required: [true, "Mobile number is required."],
       unique: true,
-      maxlength: 10,
-      minlength: 10,
+      maxlength: [10, "Mobile number cannot exceed 10 digits."],
+      minlength: [10, "Mobile number must be 10 digits."],
     },
     password: {
       type: String,
-      required: true,
+      required: [true, "Password is required."],
       select: false,
-      minlength: 6,
-      maxlength: 64,
+      minlength: [6, "Password must be at least 6 characters long."],
+      maxlength: [64, "Password cannot exceed 64 characters."],
     },
     pan: {
       type: String,
-      select: false,
     },
     gst: {
       type: String,
-      select: false,
     },
     bookings: [{ type: Types.ObjectId, ref: "Booking", default: [] }],
     acceptedTerms: { type: Boolean, required: true },

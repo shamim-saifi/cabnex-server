@@ -1,13 +1,18 @@
 import mongoose, { model, Schema, Types } from "mongoose";
 
 const citySchema = new Schema({
-  city: { type: String, required: true, unique: true },
+  city: { type: String, required: [true, "City is required."], unique: true },
+  place_id: {
+    type: String,
+    required: [true, "Place ID is required."],
+    unique: true,
+  },
   category: [
     {
       type: {
         type: Types.ObjectId,
         ref: "CarCategory",
-        required: true,
+        required: [true, "Category type is required."],
       },
       baseFare: { type: Number, default: 0 },
       marketFare: { type: Number, default: 0 },
@@ -31,7 +36,11 @@ const citySchema = new Schema({
       ref: "ActivityPackage",
     },
   ],
-  state: { type: String, required: true, unique: false },
+  state: {
+    type: String,
+    required: [true, "State is required."],
+    unique: false,
+  },
   isActive: { type: Boolean, default: true },
 });
 
