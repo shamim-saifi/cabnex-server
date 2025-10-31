@@ -50,6 +50,8 @@ app.use(
   cors({
     origin: [
       process.env.CLIENT_URL || "http://localhost:5173",
+      "https://cabnex.in",
+      "https://www.cabnex.in",
       "https://admin.cabnex.in",
       "https://dev.cabnex.in",
       "http://localhost:5173",
