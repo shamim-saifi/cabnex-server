@@ -17,6 +17,26 @@ const cookieOptions = {
   secure: process.env.NODE_ENV === "production",
 };
 
+// Get vendor statistics
+const vendorStats = asyncHandler(async (req, res) => {
+  const bookings = await Booking.find({ assignedVendor: req.vendorId });
+  const totalBookings = bookings.length;
+  const inProgressBookings = bookings.filter(
+    (booking) => booking.status === "inProgress"
+  ).length;
+  const completedBookings = bookings.filter(
+    (booking) => booking.status === "completed"
+  ).length;
+
+  res.status(200).json(
+    new SuccessResponse(200, "Vendor stats retrieved successfully", {
+      totalBookings,
+      inProgressBookings,
+      completedBookings,
+    })
+  );
+});
+
 // Get vendor details
 const getVendor = asyncHandler(async (req, res, next) => {
   const vendorId = req.vendorId;
@@ -314,6 +334,7 @@ const dashboardStats = asyncHandler(async (req, res, next) => {
 });
 
 export {
+  vendorStats,
   getAVendorCar,
   addVendorCar,
   deleteVendorCar,

@@ -12,6 +12,7 @@ import {
   updateVendorProfile,
   vendorLogin,
   vendorRegister,
+  vendorStats,
 } from "../controllers/vendor.js";
 import { getVendorCookies } from "../middlewares/authMiddleware.js";
 import { createArrayUpload, upload } from "../middlewares/mutler.js";
@@ -37,6 +38,7 @@ router
     ]),
     updateVendorProfile
   );
+router.get("/stats", vendorStats);
 
 router.get("/dashboard", dashboardStats);
 

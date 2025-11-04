@@ -11,6 +11,7 @@ import {
   searchCarsForTrip,
   travelQuery,
   updateDetails,
+  userStats,
 } from "../controllers/auth.js";
 import { getAuthCookies } from "../middlewares/authMiddleware.js";
 
@@ -26,6 +27,7 @@ router.put("/forget-password", forgetPassword);
 router.use(getAuthCookies);
 router.post("/search", searchCarsForTrip);
 router.route("/me").get(getUser).put(updateDetails).delete(deleteUser);
+router.get("/stats", userStats);
 router.get("/bookings", getBookings);
 router.delete("/bookings/:id", cancelBooking);
 router.post("/logout", logout);

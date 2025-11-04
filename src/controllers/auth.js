@@ -18,6 +18,26 @@ const cookieOptions = {
   secure: process.env.NODE_ENV === "production",
 };
 
+// Get user statistics
+const userStats = asyncHandler(async (req, res) => {
+  const bookings = await Booking.find({ userId: req.user._id });
+  const totalBookings = bookings.length;
+  const inProgressBookings = bookings.filter(
+    (booking) => booking.status === "inProgress"
+  ).length;
+  const completedBookings = bookings.filter(
+    (booking) => booking.status === "completed"
+  ).length;
+
+  res.status(200).json(
+    new SuccessResponse(200, "User stats retrieved successfully", {
+      totalBookings,
+      inProgressBookings,
+      completedBookings,
+    })
+  );
+});
+
 // Get currently logged in user
 const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
@@ -542,6 +562,7 @@ const travelQuery = asyncHandler(async (req, res, next) => {
 });
 
 export {
+  userStats,
   cancelBooking,
   deleteUser,
   forgetPassword,
