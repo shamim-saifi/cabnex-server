@@ -297,9 +297,7 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
           },
         },
       ],
-    });
-
-    console.log(transfer);
+    }).populate("category.type", "-carNames");
 
     if (!transfer) {
       transfer = await Transfer.findOne({
