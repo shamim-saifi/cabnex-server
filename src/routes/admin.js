@@ -3,7 +3,9 @@ import {
   addCarCategory,
   addCarToCategory,
   addNewCategoryToCity,
+  addNewCategoryToTransfer,
   addNewCity,
+  addNewTransfer,
   adminLogin,
   adminLogout,
   allBookings,
@@ -13,21 +15,27 @@ import {
   bookingStats,
   carStats,
   checkAdmin,
+  createWebsiteSetting,
   dashboardStats,
   deleteCarCategory,
   getAllCarCategories,
   getAllCars,
+  getAllTransfers,
   getBookingDetails,
   getCarDetails,
   getCities,
   getUserDetails,
   getVendorDetails,
+  getWebsiteSetting,
   rejectBooking,
   toggleCategoryStatusFromCity,
+  toggleCategoryStatusFromTransfer,
   updateACar,
   updateAVendor,
   updateCarCategory,
   updateCategoryFromCity,
+  updateCategoryFromTransfer,
+  updateWebsiteSetting,
   userStats,
   vendorStats,
 } from "../controllers/admin.js";
@@ -36,21 +44,36 @@ import { upload } from "../middlewares/mutler.js";
 
 const router = Router();
 
+router.get("/website-setting", getWebsiteSetting);
 router.post("/login", adminLogin);
 router.get("/car-categories", getAllCarCategories);
-router.get("/dashboard-stats", dashboardStats);
 
 router.use(getAdminCookies);
+
+// Website settings routes
+router
+  .route("/website-setting")
+  .post(createWebsiteSetting)
+  .put(upload.any(), updateWebsiteSetting);
+
 router.get("/check", checkAdmin);
+
+// Dashboard routes
+router.get("/dashboard-stats", dashboardStats);
+
+// User management routes
 router.get("/user-stats", userStats);
 router.get("/users", allUsers);
 router.get("/users/:id", getUserDetails);
+
+// Booking management routes
 router.get("/booking-stats", bookingStats);
 router.get("/bookings", allBookings);
 router.get("/bookings/:id", getBookingDetails);
-router.post("/bookings/:id/assign-vendor", assignVendorToBooking);
+router.post("/bookings/:id/assign-vendor/:vendorId", assignVendorToBooking);
 router.post("/bookings/:id/reject-booking", rejectBooking);
 
+// Vendor management routes
 router.get("/vendor-stats", vendorStats);
 router.get("/vendors", allVendors);
 router.route("/vendors/:id").get(getVendorDetails).patch(updateAVendor);
@@ -58,8 +81,6 @@ router.route("/vendors/:id").get(getVendorDetails).patch(updateAVendor);
 // City management routes
 router.route("/cities").get(getCities).post(addNewCity);
 router.route("/cities/:cityId").put(addNewCategoryToCity);
-
-// Category management routes within a city
 router
   .route("/cities/:cityId/category/:categoryId")
   .put(updateCategoryFromCity)
@@ -90,6 +111,16 @@ router.get("/car-stats", carStats);
 router.get("/cars", getAllCars);
 router.route("/cars/:id").get(getCarDetails).patch(updateACar);
 
+// Transfer management routes
+router.route("/transfers").get(getAllTransfers).post(addNewTransfer);
+router.route("/transfers/:transferId").put(addNewCategoryToTransfer);
+
+router
+  .route("/transfers/:transferId/category/:categoryId")
+  .put(updateCategoryFromTransfer)
+  .patch(toggleCategoryStatusFromTransfer);
+
+// Admin logout route
 router.post("/logout", adminLogout);
 
 export default router;

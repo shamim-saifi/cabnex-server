@@ -19,11 +19,11 @@ const travelPackageSchema = new Schema({
   },
   days: {
     type: Number,
-    required: true,
+    default: 0,
   },
   nights: {
     type: Number,
-    required: true,
+    default: 0,
   },
   image: {
     public_id: {

@@ -6,16 +6,19 @@ const socialSchema = new mongoose.Schema({
 });
 
 const faqSchema = new mongoose.Schema({
-  question: { type: String, required: true },
-  answer: { type: String, required: true },
+  question: { type: String },
+  answer: { type: String },
 });
 
 const reviewSchema = new mongoose.Schema({
-  name: { type: String, required: true },
+  name: { type: String },
+  profile: {
+    public_id: { type: String },
+    url: { type: String },
+  },
   role: { type: String }, // e.g., "Customer", "Client"
   rating: { type: Number, min: 1, max: 5 },
   comment: { type: String },
-  image: { type: String }, // optional reviewer photo
 });
 
 const websiteSettingSchema = new mongoose.Schema(
@@ -23,15 +26,15 @@ const websiteSettingSchema = new mongoose.Schema(
     siteName: {
       type: String,
       required: true,
-      default: "My Website",
+      default: "Cabnex",
     },
     logo: {
-      type: String,
-      default: "",
+      public_id: { type: String, default: "" },
+      url: { type: String, default: "" },
     },
     favicon: {
-      type: String,
-      default: "",
+      public_id: { type: String, default: "" },
+      url: { type: String, default: "" },
     },
     contactEmail: {
       type: String,
@@ -56,10 +59,6 @@ const websiteSettingSchema = new mongoose.Schema(
       title: { type: String, default: "" },
       description: { type: String, default: "" },
       keywords: [{ type: String }],
-    },
-    lastUpdatedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
     },
   },
   { timestamps: true }

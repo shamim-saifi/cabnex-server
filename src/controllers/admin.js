@@ -2,8 +2,10 @@ import Booking from "../models/Booking.js";
 import Car from "../models/Car.js";
 import CarCategory from "../models/CarCategory.js";
 import City from "../models/City.js";
+import Transfer from "../models/Transfer.js";
 import User from "../models/User.js";
 import Vendor from "../models/Vendor.js";
+import WebsiteSetting from "../models/WebsiteSetting.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import {
   deleteFromCloudinary,
@@ -24,6 +26,91 @@ const cookieOptions = {
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
+
+const getWebsiteSetting = asyncHandler(async (req, res, next) => {
+  const setting = await WebsiteSetting.findOne();
+  if (!setting) {
+    return next(new ErrorResponse(404, "Website setting not found"));
+  }
+  res.status(200).json(
+    new SuccessResponse(200, "Website setting fetched successfully", {
+      setting,
+    })
+  );
+});
+
+const createWebsiteSetting = asyncHandler(async (req, res, next) => {
+  const existingSetting = await WebsiteSetting.findOne();
+
+  if (existingSetting) {
+    return next(new ErrorResponse(400, "Website setting already exists"));
+  }
+
+  const setting = await WebsiteSetting.create(req.body);
+
+  if (!setting) {
+    return next(new ErrorResponse(400, "Failed to create website setting"));
+  }
+
+  res
+    .status(201)
+    .json(new SuccessResponse(201, "Website setting created successfully"));
+});
+
+const updateWebsiteSetting = asyncHandler(async (req, res, next) => {
+  const setting = await WebsiteSetting.findOne();
+
+  if (!setting) {
+    return next(new ErrorResponse(404, "Website setting not found"));
+  }
+
+  // --- Upload Logo ---
+  if (req?.files?.logo) {
+    const logo = await uploadToCloudinary([req.files.logo[0]]);
+    req.body.logo = logo[0];
+    if (setting.logo?.public_id) {
+      await deleteFromCloudinary([setting.logo]);
+    }
+  }
+
+  // --- Upload Favicon ---
+  if (req?.files?.favicon) {
+    const favicon = await uploadToCloudinary([req.files.favicon[0]]);
+    req.body.favicon = favicon[0];
+    if (setting.favicon?.public_id) {
+      await deleteFromCloudinary([setting.favicon]);
+    }
+  }
+
+  // --- Handle Review Profiles ---
+  if (req?.files?.profiles) {
+    // expect multiple reviewer images uploaded with field name 'profiles'
+    const uploadedProfiles = await uploadToCloudinary(req.files.profiles);
+
+    // Suppose frontend sends "reviewIndex" in body to identify which review to update
+    const reviewIndex = req.body.reviewIndex; // e.g., 0, 1, 2 etc.
+
+    if (typeof reviewIndex !== "undefined" && setting.reviews[reviewIndex]) {
+      const existingProfile = setting.reviews[reviewIndex].profile;
+
+      // delete old image if exists
+      if (existingProfile?.public_id) {
+        await deleteFromCloudinary([existingProfile]);
+      }
+
+      // update with new one
+      setting.reviews[reviewIndex].profile = uploadedProfiles[0];
+    }
+  }
+
+  // --- Update all other fields ---
+  setting.set(req.body);
+  await setting.save();
+
+  res
+    .status(200)
+    .json(new SuccessResponse(200, "Website setting updated successfully"));
+});
 
 // Check admin route
 const checkAdmin = asyncHandler(async (_, res) => {
@@ -308,9 +395,10 @@ const allBookings = asyncHandler(async (req, res) => {
   );
 });
 
+// Assign vendor to booking
 const assignVendorToBooking = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const { vendorId } = req.body;
+  const { id, vendorId } = req.params;
+
   const booking = await Booking.findOne({ bookingId: id });
   if (!booking) {
     return next(new ErrorResponse(404, "Booking not found"));
@@ -321,16 +409,18 @@ const assignVendorToBooking = asyncHandler(async (req, res, next) => {
   }
 
   booking.assignedVendor = vendorId;
+  booking.status = "inProgress";
   await booking.save();
 
-  vendor.bookings.push(bookingId);
+  vendor.bookings.push(booking._id);
   await vendor.save();
 
   res
     .status(200)
-    .json(new SuccessResponse(200, "Vendor assigned successfully", booking));
+    .json(new SuccessResponse(200, "Vendor assigned successfully"));
 });
 
+// Reject booking
 const rejectBooking = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const booking = await Booking.findOne({ bookingId: id });
@@ -452,7 +542,7 @@ const getCities = asyncHandler(async (req, res, next) => {
 
 // Add city
 const addNewCity = asyncHandler(async (req, res, next) => {
-  const { city, state, category } = req.body;
+  const { city, state, place_id, category } = req.body;
 
   const cityName = city.toLowerCase().split(" ").join("-");
 
@@ -467,6 +557,7 @@ const addNewCity = asyncHandler(async (req, res, next) => {
   const newCity = await City.create({
     city: cityName,
     state: state.toLowerCase().split(" ").join("-"),
+    place_id: place_id,
     category: category || [],
   });
 
@@ -474,11 +565,7 @@ const addNewCity = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(400, "Failed to add city"));
   }
 
-  res.status(201).json(
-    new SuccessResponse(201, "City added successfully", {
-      city: newCity,
-    })
-  );
+  res.status(201).json(new SuccessResponse(201, "City added successfully"));
 });
 
 // Add new category to existing city
@@ -492,15 +579,23 @@ const addNewCategoryToCity = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(404, "City not found"));
   }
 
+  const categoryExists = city.category.find(
+    (cat) => cat.type.toString() === categoryData.type
+  );
+
+  if (categoryExists) {
+    return next(
+      new ErrorResponse(400, "Category with same type already exists")
+    );
+  }
+
   city.category.push(categoryData);
 
   await city.save();
 
-  res.status(201).json(
-    new SuccessResponse(201, "Category added to city successfully", {
-      city,
-    })
-  );
+  res
+    .status(201)
+    .json(new SuccessResponse(201, "Category added to city successfully"));
 });
 
 // Update category from existing city
@@ -548,11 +643,9 @@ const toggleCategoryStatusFromCity = asyncHandler(async (req, res, next) => {
 
   await city.save();
 
-  res.status(200).json(
-    new SuccessResponse(200, "Category status toggled successfully", {
-      city,
-    })
-  );
+  res
+    .status(200)
+    .json(new SuccessResponse(200, "Category status toggled successfully"));
 });
 
 // Get all car categories
@@ -793,35 +886,176 @@ const updateACar = asyncHandler(async (req, res, next) => {
   res.status(200).json(new SuccessResponse(200, "Car updated successfully"));
 });
 
+// Add new transfer
+const addNewTransfer = asyncHandler(async (req, res, next) => {
+  const { name, place_id, type, city, state, category } = req.body;
+
+  req.body.name = name.toLowerCase().split(" ").join("-");
+  req.body.city = city.toLowerCase().split(" ").join("-");
+  req.body.state = state.toLowerCase().split(" ").join("-");
+
+  const transferExists = await Transfer.findOne({
+    $or: [{ place_id }, { name }],
+  });
+
+  if (transferExists) {
+    return next(
+      new ErrorResponse(400, "Place with same name or place ID already exists")
+    );
+  }
+
+  const transfer = await Transfer.create({
+    name,
+    place_id,
+    type,
+    city,
+    state,
+    category,
+  });
+
+  if (!transfer) {
+    return next(new ErrorResponse(400, "Failed to create transfer"));
+  }
+
+  res
+    .status(201)
+    .json(new SuccessResponse(201, "Transfer created successfully"));
+});
+
+// Get all transfers
+const getAllTransfers = asyncHandler(async (req, res, next) => {
+  const transfers = await Transfer.find()
+    .populate("category.type")
+    .sort({ name: 1 });
+
+  res
+    .status(200)
+    .json(
+      new SuccessResponse(200, "Transfers fetched successfully", transfers)
+    );
+});
+
+// Add new category to existing transfer
+const addNewCategoryToTransfer = asyncHandler(async (req, res, next) => {
+  const { transferId } = req.params;
+  const categoryData = req.body;
+
+  const transfer = await Transfer.findById(transferId);
+
+  if (!transfer) {
+    return next(new ErrorResponse(404, "Transfer not found"));
+  }
+
+  const categoryExists = transfer.category.find(
+    (cat) => cat.type.toString() === categoryData.type
+  );
+
+  if (categoryExists) {
+    return next(
+      new ErrorResponse(400, "Category with same type already exists")
+    );
+  }
+
+  transfer.category.push(categoryData);
+
+  await transfer.save();
+
+  res
+    .status(201)
+    .json(new SuccessResponse(201, "Category added to transfer successfully"));
+});
+
+// Update category from existing transfer
+const updateCategoryFromTransfer = asyncHandler(async (req, res, next) => {
+  const { transferId, categoryId } = req.params;
+
+  const categoryData = req.body;
+  const transfer = await Transfer.findById(transferId);
+  if (!transfer) {
+    return next(new ErrorResponse(404, "Transfer not found"));
+  }
+  const categoryIndex = transfer.category.findIndex(
+    (cat) => cat._id.toString() === categoryId
+  );
+  if (categoryIndex === -1) {
+    return next(new ErrorResponse(404, "Category not found in transfer"));
+  }
+  transfer.category[categoryIndex] = {
+    ...transfer.category[categoryIndex]._doc,
+    ...categoryData,
+  };
+  await transfer.save();
+  res
+    .status(200)
+    .json(
+      new SuccessResponse(200, "Category updated successfully in transfer")
+    );
+});
+
+// Toggle transfer visibility
+const toggleCategoryStatusFromTransfer = asyncHandler(
+  async (req, res, next) => {
+    const { transferId, categoryId } = req.params;
+    const transfer = await Transfer.findById(transferId);
+    if (!transfer) {
+      return next(new ErrorResponse(404, "Transfer not found"));
+    }
+    const categoryIndex = transfer.category.findIndex(
+      (cat) => cat._id.toString() === categoryId
+    );
+
+    if (categoryIndex === -1) {
+      return next(new ErrorResponse(404, "Category not found in transfer"));
+    }
+
+    transfer.category[categoryIndex].isActive =
+      !transfer.category[categoryIndex].isActive;
+
+    await transfer.save();
+
+    res
+      .status(200)
+      .json(new SuccessResponse(200, "Category status toggled successfully"));
+  }
+);
+
 export {
-  addCarToCategory,
-  updateACar,
-  updateAVendor,
-  getCarDetails,
-  carStats,
-  vendorStats,
-  userStats,
+  getWebsiteSetting,
+  createWebsiteSetting,
+  updateWebsiteSetting,
+  updateCategoryFromTransfer,
+  addNewCategoryToTransfer,
   addCarCategory,
+  addCarToCategory,
   addNewCategoryToCity,
   addNewCity,
-  getAllCars,
+  addNewTransfer,
   adminLogin,
   adminLogout,
   allBookings,
   allUsers,
   allVendors,
+  assignVendorToBooking,
+  bookingStats,
+  carStats,
   checkAdmin,
+  dashboardStats,
   deleteCarCategory,
   getAllCarCategories,
+  getAllCars,
+  getAllTransfers,
+  getBookingDetails,
+  getCarDetails,
   getCities,
   getUserDetails,
   getVendorDetails,
+  rejectBooking,
   toggleCategoryStatusFromCity,
+  toggleCategoryStatusFromTransfer,
+  updateACar,
+  updateAVendor,
   updateCarCategory,
   updateCategoryFromCity,
-  dashboardStats,
-  getBookingDetails,
-  bookingStats,
-  assignVendorToBooking,
-  rejectBooking,
+  userStats,
+  vendorStats,
 };

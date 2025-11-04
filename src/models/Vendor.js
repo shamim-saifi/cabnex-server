@@ -4,8 +4,8 @@ import mongoose, { model, Schema, Types } from "mongoose";
 const vendorSchema = new Schema(
   {
     profile: {
-      public_id: { type: String },
-      url: { type: String },
+      public_id: { type: String, default: "" },
+      url: { type: String, default: "" },
     },
     contactPerson: {
       type: String,

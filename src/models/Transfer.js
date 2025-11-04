@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const transferSchema = new Schema({
   name: {
@@ -19,22 +19,51 @@ const transferSchema = new Schema({
     type: String,
     required: [true, "City is required."],
   },
-  baseFare: {
-    type: Number,
-    required: [true, "Base fare is required."],
+  state: {
+    type: String,
+    required: [true, "State is required."],
   },
-  freeKm: {
-    type: Number,
-    default: 20,
-  },
-  extraKmCharge: {
-    type: Number,
-    default: 15,
-  },
+  category: [
+    {
+      type: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CarCategory",
+        required: [true, "Category type is required."],
+      },
+      baseFare: {
+        type: Number,
+        required: [true, "Base fare is required."],
+      },
+      baseKm: {
+        type: Number,
+        default: 20,
+      },
+      extraKmCharge: {
+        type: Number,
+        default: 15,
+      },
+      hillCharge: {
+        type: Number,
+        default: 0,
+      },
+      taxSlab: {
+        type: Number,
+        default: 0,
+      },
+      isActive: {
+        type: Boolean,
+        default: true,
+      },
+    },
+  ],
+
   isActive: {
     type: Boolean,
     default: true,
   },
 });
 
-export default transferSchema;
+const Transfer =
+  mongoose.models.Transfer || mongoose.model("Transfer", transferSchema);
+
+export default Transfer;

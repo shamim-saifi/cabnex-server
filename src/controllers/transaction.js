@@ -6,6 +6,7 @@ import ErrorResponse from "../utils/ErrorResponse.js";
 import SuccessResponse from "../utils/SuccessResponse.js";
 import Transaction from "../models/Transaction.js";
 import axios from "axios";
+import User from "../models/User.js";
 
 const getRazorpayKey = asyncHandler(async (req, res) => {
   res

@@ -1,13 +1,15 @@
 import axios from "axios";
 import Booking from "../models/Booking.js";
 import City from "../models/City.js";
+import RentalPackage from "../models/RentalPackage.js";
+import Transfer from "../models/Transfer.js";
+import TravelQuery from "../models/TravelQuery.js";
 import User from "../models/User.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ErrorResponse from "../utils/ErrorResponse.js";
 import generateToken from "../utils/generateToken.js";
-import SuccessResponse from "../utils/SuccessResponse.js";
-import RentalPackage from "../models/RentalPackage.js";
 import { calculateTax } from "../utils/helper.js";
+import SuccessResponse from "../utils/SuccessResponse.js";
 
 const cookieOptions = {
   maxAge: 1000 * 60 * 60 * 24 * 30,
@@ -171,7 +173,9 @@ const deleteUser = asyncHandler(async (req, res, next) => {
 
 // Get user bookings
 const getBookings = asyncHandler(async (req, res) => {
-  const bookings = await Booking.find({ userId: req.user._id });
+  const bookings = await Booking.find({ userId: req.user._id }).select(
+    "-assignedVendor"
+  );
 
   res
     .status(200)
@@ -191,7 +195,7 @@ const cancelBooking = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(404, "Booking not found"));
   }
 
-  if (!booking.assignedVendor || booking.assignedVendor === null) {
+  if (booking.assignedVendor === null) {
     return next(new ErrorResponse(400, "Cannot cancel unassigned booking"));
   }
 
@@ -221,6 +225,7 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
     packageId,
     destinations,
     oneWay,
+    transferDirection,
   } = req.body;
 
   // Validate pickup location using Google Places API
@@ -228,9 +233,14 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
     "https://maps.googleapis.com/maps/api/place/details/json?",
     {
       params: {
-        place_id: pickupLocation,
+        place_id:
+          serviceType === "transfer"
+            ? transferDirection === "home-to-station"
+              ? destinations[0]
+              : pickupLocation
+            : pickupLocation,
         key: process.env.GOOGLE_MAPS_API_KEY,
-        fields: "address_component",
+        fields: "name,place_id,address_component",
       },
     }
   );
@@ -249,6 +259,95 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
     ?.long_name.trim()
     .toLowerCase()
     .replace(/\s+/g, "-");
+
+  // Handle transfer service type separately
+  if (serviceType === "transfer") {
+    let transfer = await Transfer.findOne({
+      $or: [
+        { place_id: placeDetails?.result?.place_id },
+        {
+          name: {
+            $regex: new RegExp(
+              `^${placeDetails?.result?.name
+                ?.toLowerCase()
+                .split(" ")
+                .join("-")}`,
+              "i"
+            ),
+          },
+        },
+      ],
+    });
+
+    console.log(transfer);
+
+    if (!transfer) {
+      transfer = await Transfer.findOne({
+        name: "default",
+      });
+    }
+
+    const activeCategories =
+      transfer?.category?.filter((cat) => cat.isActive) || [];
+
+    const { data: distanceData } = await axios.get(
+      "https://maps.googleapis.com/maps/api/directions/json",
+      {
+        params: {
+          origin: `place_id:${pickupLocation}`,
+          destination: `place_id:${destinations[0]}`,
+          key: process.env.GOOGLE_MAPS_API_KEY,
+        },
+      }
+    );
+
+    if (distanceData.status !== "OK") {
+      return next(new ErrorResponse(400, "Error fetching distance data"));
+    }
+
+    // Sum up distances from origin to destination
+    // Convert meters to kilometers and round up
+    const [distance, time] = await Promise.all([
+      Math.ceil(
+        distanceData.routes[0].legs.reduce((acc, elem) => {
+          acc += elem.distance.value;
+          return acc;
+        }, 0) / 1000
+      ),
+      Math.ceil(
+        distanceData.routes[0].legs.reduce((acc, elem) => {
+          acc += elem.duration.value;
+          return acc;
+        }, 0) / 60
+      ),
+    ]);
+
+    const updatedCategories = activeCategories.map((category) => {
+      let totalAmount = category.baseFare || 0;
+
+      if (distance > category.baseKm) {
+        const extraKm = distance - category.baseKm;
+        totalAmount += extraKm * category.extraKmCharge;
+      }
+
+      totalAmount += category.hillCharge;
+      totalAmount += calculateTax(totalAmount, category.taxSlab);
+
+      return {
+        ...(category.toObject?.() || category), // handle both Mongoose docs or plain JS objects
+        totalAmount,
+      };
+    });
+
+    return res.status(200).json(
+      new SuccessResponse(200, "Cars retrieved successfully", {
+        city: formattedPickupLocation,
+        distance,
+        time,
+        categories: updatedCategories,
+      })
+    );
+  }
 
   // Find car categories available in the pickup city
   let categoriesInCity = await City.findOne({
@@ -327,8 +426,6 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
         (new Date(returnDateTime) - new Date(pickupDateTime)) /
           (1000 * 60 * 60 * 24)
       );
-
-      console.log(days, pickupDateTime, returnDateTime);
 
       if (days && days > 0) {
         const totalDriverAllowance = category.driverAllowance * days;
@@ -434,7 +531,18 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
   }
 });
 
+const travelQuery = asyncHandler(async (req, res, next) => {
+  const newTravelQuery = await TravelQuery.create(req.body);
+  if (!newTravelQuery) {
+    return next(new ErrorResponse(500, "Failed to submit travel query"));
+  }
+  res
+    .status(201)
+    .json(new SuccessResponse(201, "Travel query submitted successfully"));
+});
+
 export {
+  cancelBooking,
   deleteUser,
   forgetPassword,
   getBookings,
@@ -443,6 +551,6 @@ export {
   logout,
   register,
   searchCarsForTrip,
+  travelQuery,
   updateDetails,
-  cancelBooking,
 };

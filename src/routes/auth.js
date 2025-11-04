@@ -9,6 +9,7 @@ import {
   logout,
   register,
   searchCarsForTrip,
+  travelQuery,
   updateDetails,
 } from "../controllers/auth.js";
 import { getAuthCookies } from "../middlewares/authMiddleware.js";
@@ -16,13 +17,14 @@ import { getAuthCookies } from "../middlewares/authMiddleware.js";
 const router = Router();
 
 // Public routes
-router.post("/search", searchCarsForTrip);
 router.post("/register", register);
 router.post("/login", login);
+router.post("/travel-query", travelQuery);
 router.put("/forget-password", forgetPassword);
 
 // Protected routes
 router.use(getAuthCookies);
+router.post("/search", searchCarsForTrip);
 router.route("/me").get(getUser).put(updateDetails).delete(deleteUser);
 router.get("/bookings", getBookings);
 router.delete("/bookings/:id", cancelBooking);
