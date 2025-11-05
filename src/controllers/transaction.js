@@ -138,6 +138,9 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
         serviceType: req.body.serviceType,
         packageType: "activity",
         packageId: req.body.packageId,
+        exactLocation: req.body.exactLocation,
+        pickupDateTime: req.body.pickupDateTime,
+        startLocation: req.body.startLocation,
         totalAmount: req.body.totalAmount,
         recievedAmount: p.amount / 100,
       };
