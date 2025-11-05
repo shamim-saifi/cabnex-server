@@ -526,9 +526,9 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
         .select("-category")
         .populate("activities");
 
-      const ActiveActivities = activitiesInCity?.activities?.filter(
-        (act) => act.isActive
-      );
+      const ActiveActivities = activitiesInCity?.activities
+        ?.filter((act) => act.isActive)
+        .map((activity) => ({ ...activity, totalAmount: activity?.price }));
 
       return res.status(200).json(
         new SuccessResponse(200, "Activities retrieved successfully", {

@@ -42,6 +42,7 @@ const activityPackageSchema = new Schema(
     price: {
       type: Number,
       min: 0,
+      default: 0,
     },
 
     // Optional tiered pricing (e.g. adult, child)
@@ -53,13 +54,13 @@ const activityPackageSchema = new Schema(
     ],
 
     // Meeting or start location
-    startLocation: {
-      name: String,
-      coordinates: {
-        lat: Number,
-        lng: Number,
-      },
-    },
+    // startLocation: {
+    //   name: String,
+    //   coordinates: {
+    //     lat: Number,
+    //     lng: Number,
+    //   },
+    // },
 
     // Optional list of places covered in the activity
     itinerary: [
