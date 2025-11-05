@@ -12,6 +12,9 @@ const bookingSchema = new Schema(
       ref: "User",
       required: [true, "User ID is required."],
     },
+    city: {
+      type: String,
+    },
     carCategory: {
       type: String,
     },

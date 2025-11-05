@@ -10,6 +10,7 @@ import {
   logoutVendor,
   updateVendorCar,
   updateVendorProfile,
+  vendorBookings,
   vendorLogin,
   vendorRegister,
   vendorStats,
@@ -52,6 +53,8 @@ router
   .get(getAVendorCar)
   .put(createArrayUpload("images", 10), updateVendorCar)
   .delete(deleteVendorCar);
+
+router.get("/bookings", vendorBookings);
 
 router.post("/logout", logoutVendor);
 

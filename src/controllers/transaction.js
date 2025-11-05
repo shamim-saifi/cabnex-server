@@ -87,6 +87,7 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
     if (serviceType.toLowerCase() === "outstation") {
       payload = {
         userId: req.user._id,
+        city: req.body.city,
         carCategory: req.body.carCategory,
         serviceType: req.body.serviceType,
         exactLocation: req.body.exactLocation,
@@ -97,15 +98,20 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
         distance: req.body.distance,
         totalAmount: req.body.totalAmount,
         recievedAmount: p.amount / 100,
-        tripType: req.body.oneWay ? "one" : "round",
+        tripType: req.body.oneWay
+          ? "one"
+          : destinations.length > 1
+          ? "multi"
+          : "round",
       };
     } else if (serviceType.toLowerCase() === "rental") {
       payload = {
         userId: req.user._id,
+        city: req.body.city,
         carCategory: req.body.carCategory,
         serviceType: req.body.serviceType,
         exactLocation: req.body.exactLocation,
-        packageType: req.body.packageType,
+        packageType: "rental",
         packageId: req.body.packageId,
         pickupDateTime: req.body.pickupDateTime,
         startLocation: req.body.startLocation,
@@ -115,14 +121,23 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
     } else if (serviceType.toLowerCase() === "transfer") {
       payload = {
         userId: req.user._id,
+        city: req.body.city,
         carCategory: req.body.carCategory,
         serviceType: req.body.serviceType,
         exactLocation: req.body.exactLocation,
-        packageType: req.body.packageType,
-        packageId: req.body.packageId,
         pickupDateTime: req.body.pickupDateTime,
         startLocation: req.body.startLocation,
         destinations: req.body.destinations,
+        totalAmount: req.body.totalAmount,
+        recievedAmount: p.amount / 100,
+      };
+    } else if (serviceType.toLowerCase() === "activity") {
+      payload = {
+        userId: req.user._id,
+        city: req.body.city,
+        serviceType: req.body.serviceType,
+        packageType: "activity",
+        packageId: req.body.packageId,
         totalAmount: req.body.totalAmount,
         recievedAmount: p.amount / 100,
       };

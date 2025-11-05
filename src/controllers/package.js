@@ -1,5 +1,7 @@
-import TravelPackage from "../models/TravelPackage.js";
+import ActivityPackage from "../models/ActivityPackage.js";
+import City from "../models/City.js";
 import RentalPackage from "../models/RentalPackage.js";
+import TravelPackage from "../models/TravelPackage.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import {
   deleteFromCloudinary,
@@ -7,8 +9,6 @@ import {
 } from "../utils/cloudinary.js";
 import ErrorResponse from "../utils/ErrorResponse.js";
 import SuccessResponse from "../utils/SuccessResponse.js";
-import City from "../models/City.js";
-import ActivityPackage from "../models/ActivityPackage.js";
 
 // Get All Travel Packages
 const getAllTravelPackages = asyncHandler(async (req, res, next) => {
@@ -141,15 +141,31 @@ const deleteRentalPackage = asyncHandler(async (req, res, next) => {
     .json(new SuccessResponse(200, "Rental package deleted successfully"));
 });
 
+const getActivityPackages = asyncHandler(async (req, res, next) => {
+  const activityPackages = await ActivityPackage.find();
+  if (!activityPackages) {
+    return next(new ErrorResponse(404, "Activity packages not found"));
+  }
+  res
+    .status(200)
+    .json(
+      new SuccessResponse(
+        200,
+        "Activity packages retrieved successfully",
+        activityPackages
+      )
+    );
+});
+
 // Create Activity Package
 const createActivityPackage = asyncHandler(async (req, res, next) => {
   const {
     cityId,
     title,
     description,
-    images,
     duration,
     price,
+    pricingOptions,
     startLocation,
     itinerary,
     includes,
@@ -157,53 +173,50 @@ const createActivityPackage = asyncHandler(async (req, res, next) => {
     cancellationPolicy,
   } = req.body;
 
-  const activityPackage = await ActivityPackage.create({
-    cityId,
-    title,
-    description,
-    images,
-    duration,
-    price,
-    startLocation,
-    itinerary,
-    includes,
-    excludes,
-    cancellationPolicy,
-  });
-
-  if (!activityPackage) {
-    return next(new ErrorResponse(400, "Failed to create activity package"));
-  }
-
   const city = await City.findById(cityId);
+
   if (!city) {
     return next(new ErrorResponse(404, "City not found"));
   }
-  city.activities.push(activityPackage._id);
+
+  if (req.files && req.files.length > 0) {
+    const uploadedImages = await uploadToCloudinary(req.files);
+    req.body.images = uploadedImages;
+  }
+
+  const newPackage = await ActivityPackage.create({
+    cityId,
+    title,
+    description,
+    images: req.body.images,
+    duration,
+    price,
+    pricingOptions: pricingOptions ? JSON.parse(pricingOptions) : undefined,
+    startLocation: startLocation ? JSON.parse(startLocation) : undefined,
+    itinerary: itinerary ? JSON.parse(itinerary) : undefined,
+    includes: includes ? JSON.parse(includes) : [],
+    excludes: excludes ? JSON.parse(excludes) : [],
+    cancellationPolicy,
+  });
+
+  city.activities.push(newPackage._id);
   await city.save();
 
-  res
-    .status(201)
-    .json(
-      new SuccessResponse(
-        201,
-        "Activity package created successfully",
-        activityPackage
-      )
-    );
+  return res.status(201).json({
+    success: true,
+    data: newPackage,
+  });
 });
 
 export {
-  // Travel Packages
-  getAllTravelPackages,
-  createTravelPackage,
-  updateTravelPackage,
-  deleteTravelPackage,
-  // Rental Packages
-  getAllRentalPackages,
-  createRentalPackage,
-  updateRentalPackage,
-  deleteRentalPackage,
-  // Activity Packages
   createActivityPackage,
+  createRentalPackage,
+  createTravelPackage,
+  deleteRentalPackage,
+  deleteTravelPackage,
+  getActivityPackages,
+  getAllRentalPackages,
+  getAllTravelPackages,
+  updateRentalPackage,
+  updateTravelPackage,
 };

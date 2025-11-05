@@ -293,9 +293,10 @@ const deleteVendorCar = asyncHandler(async (req, res, next) => {
   res.status(200).json(new SuccessResponse(200, "Car deleted successfully"));
 });
 
+// Get vendor dashboard statistics
 const dashboardStats = asyncHandler(async (req, res, next) => {
   const [bookings, cars] = await Promise.all([
-    Booking.find({ assignedVendor: req.vendorId }).sort({
+    Booking.find({ assignedVendor: req.vendorId }).populate("userId").sort({
       createdAt: -1,
     }),
     Car.find({ vendor: req.vendorId }),
@@ -338,11 +339,29 @@ const dashboardStats = asyncHandler(async (req, res, next) => {
   );
 });
 
+// Get vendor bookings
+const vendorBookings = asyncHandler(async (req, res, next) => {
+  const bookings = await Booking.find({ assignedVendor: req.vendorId }).sort({
+    createdAt: -1,
+  });
+
+  res
+    .status(200)
+    .json(
+      new SuccessResponse(
+        200,
+        "Vendor bookings retrieved successfully",
+        bookings
+      )
+    );
+});
+
 export {
   vendorStats,
   getAVendorCar,
   addVendorCar,
   deleteVendorCar,
+  vendorBookings,
   getVendor,
   getVendorCars,
   logoutVendor,

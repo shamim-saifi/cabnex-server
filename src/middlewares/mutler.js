@@ -5,7 +5,7 @@ export const upload = multer({
   // storage: multer.memoryStorage(),
 });
 
-export const createArrayUpload = (fileName, maxSizeMB = 5) => {
+export const createArrayUpload = (fileName, maxSizeMB = 5, maxCount = 10) => {
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   const upload = multer({
     limits: { fileSize: maxSizeBytes },
@@ -15,7 +15,7 @@ export const createArrayUpload = (fileName, maxSizeMB = 5) => {
     // store limit on req for error middleware to read later
     req.fileSizeLimit = maxSizeBytes;
 
-    upload.array(fileName)(req, res, (err) => {
+    upload.array(fileName, maxCount)(req, res, (err) => {
       if (err) return next(err);
       next();
     });

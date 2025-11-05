@@ -24,6 +24,7 @@ import {
   getBookingDetails,
   getCarDetails,
   getCities,
+  getCityNames,
   getUserDetails,
   getVendorDetails,
   getWebsiteSetting,
@@ -79,6 +80,7 @@ router.get("/vendors", allVendors);
 router.route("/vendors/:id").get(getVendorDetails).patch(updateAVendor);
 
 // City management routes
+router.route("/cities-names").get(getCityNames);
 router.route("/cities").get(getCities).post(addNewCity);
 router.route("/cities/:cityId").put(addNewCategoryToCity);
 router

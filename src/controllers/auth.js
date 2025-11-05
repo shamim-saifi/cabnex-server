@@ -302,7 +302,7 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
     if (!transfer) {
       transfer = await Transfer.findOne({
         name: "default",
-      });
+      }).populate("category.type", "-carNames");
     }
 
     const activeCategories =

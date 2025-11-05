@@ -30,6 +30,7 @@ const activityPackageSchema = new Schema(
         },
       },
     ],
+
     // Duration options (in hours or days)
     duration: {
       type: Number,

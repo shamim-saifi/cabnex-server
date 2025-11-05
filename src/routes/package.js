@@ -9,8 +9,9 @@ import {
   updateTravelPackage,
   updateRentalPackage,
   createActivityPackage,
+  getActivityPackages,
 } from "../controllers/package.js";
-import { upload } from "../middlewares/mutler.js";
+import { createArrayUpload, upload } from "../middlewares/mutler.js";
 import { getAdminCookies } from "../middlewares/authMiddleware.js";
 
 const router = Router();
@@ -34,6 +35,9 @@ router
   .delete(deleteRentalPackage);
 
 // Activity Packages
-router.route("/activity").post(createActivityPackage);
+router
+  .route("/activity")
+  .get(getActivityPackages)
+  .post(createArrayUpload("images", 10, 8), createActivityPackage);
 
 export default router;

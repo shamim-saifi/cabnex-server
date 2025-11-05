@@ -211,6 +211,7 @@ const dashboardStats = asyncHandler(async (_, res, next) => {
 
   const pendingBookingsTable = pendingBookings.map((b) => ({
     bookingId: b.bookingId,
+    city: b.city || "N/A",
     userName: b.userId?.fullName || "N/A",
     carCategory: b.carCategory || "N/A",
     serviceType: b.serviceType || "N/A",
@@ -218,15 +219,12 @@ const dashboardStats = asyncHandler(async (_, res, next) => {
     pickupDateTime: b.pickupDateTime,
     startLocation: b.startLocation?.address || "N/A",
     destinations: b.destinations?.map((d) => d.address) || [],
-    type:
-      Math.ceil(
-        (new Date(b.returnDateTime) - new Date(b.pickupDateTime)) / 86400000
-      ) > 0
-        ? "multi"
-        : "one",
+    type: b.tripType,
     totalAmount: b.totalAmount,
     status: b.status,
   }));
+
+  console.log(pendingBookings);
 
   return res.status(200).json(
     new SuccessResponse(200, "Dashboard statistics fetched successfully", {
@@ -469,21 +467,26 @@ const vendorStats = asyncHandler(async (_, res) => {
 
 // get all vendors
 const allVendors = asyncHandler(async (req, res) => {
-  const { search = "", page = 1, resultPerPage = 10 } = req.query;
+  const { search = "", status, page = 1, resultPerPage = 10 } = req.query;
   const skip = (page - 1) * resultPerPage;
+
+  // Build filter dynamically
+  const filter = {};
+
+  if (status) {
+    filter.isVerified = status;
+  }
+
+  if (search) {
+    filter.$or = [
+      { bookingId: { $regex: search, $options: "i" } },
+      { "user.name": { $regex: search, $options: "i" } },
+      { "vendor.company": { $regex: search, $options: "i" } },
+    ];
+  }
+
   const [vendors, totalCount] = await Promise.all([
-    Vendor.find(
-      search
-        ? {
-            $or: [
-              { company: { $regex: search, $options: "i" } },
-              { contactPerson: { $regex: search, $options: "i" } },
-              { email: { $regex: search, $options: "i" } },
-              { contactPhone: { $regex: search, $options: "i" } },
-            ],
-          }
-        : {}
-    )
+    Vendor.find(filter)
       .select(
         "company companyType contactPerson email contactPhone isVerified createdAt"
       )
@@ -499,6 +502,8 @@ const allVendors = asyncHandler(async (req, res) => {
       .populate("cars"),
     Vendor.countDocuments(),
   ]);
+
+  console.log(vendors);
 
   const totalPages = Math.ceil(totalCount / resultPerPage);
 
@@ -1019,7 +1024,19 @@ const toggleCategoryStatusFromTransfer = asyncHandler(
   }
 );
 
+// Get all cities
+const getCityNames = asyncHandler(async (req, res) => {
+  let cities = await City.find().select("city");
+
+  cities = cities.filter((city) => city.city !== "default");
+
+  res
+    .status(200)
+    .json(new SuccessResponse(200, "Cities fetched successfully", cities));
+});
+
 export {
+  getCityNames,
   getWebsiteSetting,
   createWebsiteSetting,
   updateWebsiteSetting,
