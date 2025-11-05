@@ -7,6 +7,7 @@ import SuccessResponse from "../utils/SuccessResponse.js";
 import Transaction from "../models/Transaction.js";
 import axios from "axios";
 import User from "../models/User.js";
+import { log } from "console";
 
 const getRazorpayKey = asyncHandler(async (req, res) => {
   res
@@ -54,6 +55,8 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
       razorpaySignature,
       serviceType,
     } = req.body;
+
+    log("req.body:", req.body);
 
     // ✅ Verify signature
     const sign = razorpayOrderId + "|" + razorpayPaymentId;
@@ -119,6 +122,7 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
         packageId: req.body.packageId,
         pickupDateTime: req.body.pickupDateTime,
         startLocation: req.body.startLocation,
+        destinations: req.body.destinations,
         totalAmount: req.body.totalAmount,
         recievedAmount: p.amount / 100,
       };
@@ -153,6 +157,9 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
 
     await user.save();
     await newBooking.save();
+
+    console.log("New booking created:", newBooking);
+    console.log("Transaction created:", transaction);
 
     return res.status(200).json(
       new SuccessResponse(200, "Payment verified successfully", {

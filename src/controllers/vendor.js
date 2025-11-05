@@ -309,6 +309,10 @@ const dashboardStats = asyncHandler(async (req, res, next) => {
 
   const pendingCars = cars.filter((car) => car.isVerified === "pending").length;
 
+  const assignedBookings = bookings.filter(
+    (booking) => booking.status === "inProgress"
+  ).length;
+
   const completedBookings = bookings.filter(
     (booking) => booking.status === "completed"
   ).length;
@@ -326,6 +330,7 @@ const dashboardStats = asyncHandler(async (req, res, next) => {
       totalCars,
       approvedCars,
       pendingCars,
+      assignedBookings,
       completedBookings,
       upcomingBookings,
       recentBookings,

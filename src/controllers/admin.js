@@ -374,7 +374,7 @@ const allBookings = asyncHandler(async (req, res) => {
         : {}
     )
       .sort({
-        bookingId: -1,
+        createdAt: -1,
       })
       .skip(skip)
       .limit(resultPerPage)

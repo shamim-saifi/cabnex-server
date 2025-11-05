@@ -141,6 +141,7 @@ const deleteRentalPackage = asyncHandler(async (req, res, next) => {
     .json(new SuccessResponse(200, "Rental package deleted successfully"));
 });
 
+// Create Activity Package
 const createActivityPackage = asyncHandler(async (req, res, next) => {
   const {
     cityId,
