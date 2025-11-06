@@ -100,7 +100,7 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
         recievedAmount: p.amount / 100,
         tripType: req.body.oneWay
           ? "one"
-          : destinations.length > 1
+          : req.body.destinations.length > 1
           ? "multi"
           : "round",
       };
@@ -111,7 +111,7 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
         carCategory: req.body.carCategory,
         serviceType: req.body.serviceType,
         exactLocation: req.body.exactLocation,
-        packageType: "rental",
+        packageType: "RentalPackage",
         packageId: req.body.packageId,
         pickupDateTime: req.body.pickupDateTime,
         startLocation: req.body.startLocation,
@@ -136,7 +136,7 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
         userId: req.user._id,
         city: req.body.city,
         serviceType: req.body.serviceType,
-        packageType: "activity",
+        packageType: "ActivityPackage",
         packageId: req.body.packageId,
         exactLocation: req.body.exactLocation,
         pickupDateTime: req.body.pickupDateTime,
@@ -175,9 +175,6 @@ const verifyRazorpayPayment = asyncHandler(async (req, res, next) => {
 
     await user.save();
     await newBooking.save();
-
-    console.log("New booking created:", newBooking);
-    console.log("Transaction created:", transaction);
 
     return res.status(200).json(
       new SuccessResponse(200, "Payment verified successfully", {

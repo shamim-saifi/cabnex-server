@@ -10,6 +10,9 @@ import {
   updateRentalPackage,
   createActivityPackage,
   getActivityPackages,
+  updateActivityPackage,
+  deleteActivityPackage,
+  toggleActivityPackageStatus,
 } from "../controllers/package.js";
 import { createArrayUpload, upload } from "../middlewares/mutler.js";
 import { getAdminCookies } from "../middlewares/authMiddleware.js";
@@ -39,5 +42,11 @@ router
   .route("/activity")
   .get(getActivityPackages)
   .post(createArrayUpload("images", 10, 8), createActivityPackage);
+
+router
+  .route("/activity/:id")
+  .put(createArrayUpload("images", 10, 8), updateActivityPackage)
+  .patch(toggleActivityPackageStatus)
+  .delete(deleteActivityPackage);
 
 export default router;

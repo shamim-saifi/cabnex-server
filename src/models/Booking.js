@@ -25,7 +25,7 @@ const bookingSchema = new Schema(
     },
     packageType: {
       type: String,
-      enum: ["TravelPackage", "ActivityPackage", "RentalPackage"],
+      enum: ["ActivityPackage", "RentalPackage"],
     },
     packageId: {
       type: Types.ObjectId,
@@ -76,7 +76,7 @@ const bookingSchema = new Schema(
     },
     tripType: {
       type: String,
-      enum: ["one", "round"],
+      enum: ["one", "round", "multi"],
     },
     status: {
       type: String,

@@ -1,3 +1,4 @@
+import { validate } from "uuid";
 import ActivityPackage from "../models/ActivityPackage.js";
 import City from "../models/City.js";
 import RentalPackage from "../models/RentalPackage.js";
@@ -166,7 +167,6 @@ const createActivityPackage = asyncHandler(async (req, res, next) => {
     duration,
     price,
     pricingOptions,
-    startLocation,
     itinerary,
     includes,
     excludes,
@@ -192,7 +192,6 @@ const createActivityPackage = asyncHandler(async (req, res, next) => {
     duration,
     price,
     pricingOptions: pricingOptions ? JSON.parse(pricingOptions) : undefined,
-    startLocation: startLocation ? JSON.parse(startLocation) : undefined,
     itinerary: itinerary ? JSON.parse(itinerary) : undefined,
     includes: includes ? JSON.parse(includes) : [],
     excludes: excludes ? JSON.parse(excludes) : [],
@@ -208,7 +207,87 @@ const createActivityPackage = asyncHandler(async (req, res, next) => {
   });
 });
 
+const updateActivityPackage = asyncHandler(async (req, res, next) => {
+  const activityPackage = await ActivityPackage.findById(req.params.id);
+  if (!activityPackage) {
+    return next(new ErrorResponse(404, "Activity package not found"));
+  }
+
+  // parse JSON fields
+  const pricingOptions = req.body.pricingOptions
+    ? JSON.parse(req.body.pricingOptions)
+    : [];
+  const itinerary = req.body.itinerary ? JSON.parse(req.body.itinerary) : [];
+  const includes = req.body.includes ? JSON.parse(req.body.includes) : [];
+  const excludes = req.body.excludes ? JSON.parse(req.body.excludes) : [];
+
+  // other simple fields
+  const { cityId, title, description, duration, price, cancellationPolicy } =
+    req.body;
+
+  if (req.files && req.files.length > 0) {
+    const uploadedImages = await uploadToCloudinary(req.files);
+    req.body.images = uploadedImages;
+    if (activityPackage.images && activityPackage.images.length > 0) {
+      await deleteFromCloudinary(activityPackage.images);
+    }
+  }
+
+  await activityPackage.set({
+    cityId,
+    title,
+    description,
+    duration: Number(duration),
+    price: Number(price),
+    cancellationPolicy,
+    pricingOptions,
+    itinerary,
+    includes,
+    excludes,
+    images: req.body.images,
+  });
+  await activityPackage.save({ validateBeforeSave: false });
+  res
+    .status(200)
+    .json(new SuccessResponse(200, "Activity package updated successfully"));
+});
+
+const deleteActivityPackage = asyncHandler(async (req, res, next) => {
+  const activityPackage = await ActivityPackage.findById(req.params.id);
+  if (!activityPackage) {
+    return next(new ErrorResponse(404, "Activity package not found"));
+  }
+  // Delete images from Cloudinary
+  if (activityPackage.images && activityPackage.images.length > 0) {
+    await deleteFromCloudinary(activityPackage.images);
+  }
+  await activityPackage.deleteOne();
+  res
+    .status(200)
+    .json(new SuccessResponse(200, "Activity package deleted successfully"));
+});
+
+const toggleActivityPackageStatus = asyncHandler(async (req, res, next) => {
+  const activityPackage = await ActivityPackage.findById(req.params.id);
+
+  if (!activityPackage) {
+    return next(new ErrorResponse(404, "Activity package not found"));
+  }
+
+  activityPackage.isActive = !activityPackage.isActive;
+  await activityPackage.save({ validateBeforeSave: false });
+
+  res
+    .status(200)
+    .json(
+      new SuccessResponse(200, "Activity package status updated successfully")
+    );
+});
+
 export {
+  toggleActivityPackageStatus,
+  updateActivityPackage,
+  deleteActivityPackage,
   createActivityPackage,
   createRentalPackage,
   createTravelPackage,

@@ -224,8 +224,6 @@ const dashboardStats = asyncHandler(async (_, res, next) => {
     status: b.status,
   }));
 
-  console.log(pendingBookings);
-
   return res.status(200).json(
     new SuccessResponse(200, "Dashboard statistics fetched successfully", {
       bookings: [
@@ -502,8 +500,6 @@ const allVendors = asyncHandler(async (req, res) => {
       .populate("cars"),
     Vendor.countDocuments(),
   ]);
-
-  console.log(vendors);
 
   const totalPages = Math.ceil(totalCount / resultPerPage);
 
