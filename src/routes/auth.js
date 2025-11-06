@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   cancelBooking,
+  changePassword,
   deleteUser,
   forgetPassword,
   getBookings,
@@ -26,7 +27,12 @@ router.put("/forget-password", forgetPassword);
 // Protected routes
 router.use(getAuthCookies);
 router.post("/search", searchCarsForTrip);
-router.route("/me").get(getUser).put(updateDetails).delete(deleteUser);
+router
+  .route("/me")
+  .get(getUser)
+  .put(updateDetails)
+  .patch(changePassword)
+  .delete(deleteUser);
 router.get("/stats", userStats);
 router.get("/bookings", getBookings);
 router.delete("/bookings/:id", cancelBooking);

@@ -221,6 +221,12 @@ const getAVendorCar = asyncHandler(async (req, res, next) => {
 const addVendorCar = asyncHandler(async (req, res, next) => {
   const vendorId = req.vendorId;
 
+  const vendor = await Vendor.findById(vendorId);
+
+  if (!vendor.isVerified) {
+    return next(new ErrorResponse(404, "Cannot add car. Vendor not verified"));
+  }
+
   const carExists = await Car.findOne({
     registrationNumber: req.body.registrationNumber,
   });
@@ -237,7 +243,8 @@ const addVendorCar = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(400, "Failed to add car"));
   }
 
-  await Vendor.findByIdAndUpdate(vendorId, { $push: { cars: newCar._id } });
+  await vendor.cars.push(newCar._id);
+  await vendor.save({ validateBeforeSave: false });
 
   res
     .status(201)
@@ -341,9 +348,11 @@ const dashboardStats = asyncHandler(async (req, res, next) => {
 
 // Get vendor bookings
 const vendorBookings = asyncHandler(async (req, res, next) => {
-  const bookings = await Booking.find({ assignedVendor: req.vendorId }).sort({
-    createdAt: -1,
-  });
+  const bookings = await Booking.find({ assignedVendor: req.vendorId })
+    .populate("userId")
+    .sort({
+      createdAt: -1,
+    });
 
   res
     .status(200)

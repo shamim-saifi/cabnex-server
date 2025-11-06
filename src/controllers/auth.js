@@ -160,6 +160,24 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
   res.status(200).json(new SuccessResponse(200, "Password reset successfully"));
 });
 
+// Change password
+const changePassword = asyncHandler(async (req, res, next) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await User.findById(req.user._id).select("+password");
+
+  if (!user) {
+    return next(new ErrorResponse(404, "User not found"));
+  }
+  if (!(await user.isPasswordCorrect(currentPassword))) {
+    return next(new ErrorResponse(401, "Current password is incorrect"));
+  }
+  user.password = newPassword;
+  await user.save();
+  res
+    .status(200)
+    .json(new SuccessResponse(200, "Password changed successfully"));
+});
+
 // Update user details
 const updateDetails = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user._id).select("+password");
@@ -549,6 +567,7 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Submit travel query
 const travelQuery = asyncHandler(async (req, res, next) => {
   const newTravelQuery = await TravelQuery.create(req.body);
   if (!newTravelQuery) {
@@ -560,6 +579,7 @@ const travelQuery = asyncHandler(async (req, res, next) => {
 });
 
 export {
+  changePassword,
   userStats,
   cancelBooking,
   deleteUser,
