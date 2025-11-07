@@ -16,8 +16,12 @@ import {
   carStats,
   checkAdmin,
   createWebsiteSetting,
+  createWebsiteSettingFAQ,
+  createWebsiteSettingReview,
   dashboardStats,
   deleteCarCategory,
+  deleteWebsiteSettingFAQ,
+  deleteWebsiteSettingReview,
   getAllCarCategories,
   getAllCars,
   getAllTransfers,
@@ -36,7 +40,9 @@ import {
   updateCarCategory,
   updateCategoryFromCity,
   updateCategoryFromTransfer,
-  updateWebsiteSetting,
+  updateWebsiteSettingBasics,
+  updateWebsiteSettingFAQ,
+  updateWebsiteSettingReview,
   userStats,
   vendorStats,
 } from "../controllers/admin.js";
@@ -55,7 +61,19 @@ router.use(getAdminCookies);
 router
   .route("/website-setting")
   .post(createWebsiteSetting)
-  .put(upload.any(), updateWebsiteSetting);
+  .put(upload.any(), updateWebsiteSettingBasics);
+
+router
+  .route("/website-setting/review")
+  .post(createWebsiteSettingReview)
+  .put(upload.single("profile"), updateWebsiteSettingReview)
+  .delete(deleteWebsiteSettingReview);
+
+router
+  .route("/website-setting/faq")
+  .post(createWebsiteSettingFAQ)
+  .put(updateWebsiteSettingFAQ)
+  .delete(deleteWebsiteSettingFAQ);
 
 router.get("/check", checkAdmin);
 
