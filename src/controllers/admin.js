@@ -165,8 +165,9 @@ const dashboardStats = asyncHandler(async (_, res, next) => {
     const pickup = new Date(b.pickupDateTime);
     const returnDate = b.returnDateTime ? new Date(b.returnDateTime) : null;
     const active =
-      b.status === "inProgress" ||
-      (pickup <= now && (!returnDate || now <= returnDate));
+      b.status === "inProgress" &&
+      pickup <= now &&
+      (!returnDate || now <= returnDate);
     return active && b.assignedVendor != null;
   });
 
@@ -205,23 +206,23 @@ const dashboardStats = asyncHandler(async (_, res, next) => {
       totalAmount: b.totalAmount,
       status: b.status,
     }))
-    .slice(0, 5);
+    .slice(0, 10);
 
   // ──────────────── PENDING BOOKINGS TABLE DATA ────────────────
 
   const pendingBookingsTable = pendingBookings.map((b) => ({
     bookingId: b.bookingId,
-    city: b.city || "N/A",
+    city: b.city,
     userName: b.userId?.fullName || "N/A",
     carCategory: b.carCategory || "N/A",
     serviceType: b.serviceType || "N/A",
-    packageType: b.packageType,
     pickupDateTime: b.pickupDateTime,
     startLocation: b.startLocation?.address || "N/A",
     destinations: b.destinations?.map((d) => d.address) || [],
     type: b.tripType,
     totalAmount: b.totalAmount,
     status: b.status,
+    createdAt: b.createdAt,
   }));
 
   return res.status(200).json(
@@ -257,17 +258,19 @@ const dashboardStats = asyncHandler(async (_, res, next) => {
 
 // Get user statistics
 const userStats = asyncHandler(async (_, res) => {
-  const [totalUsers, activeUsers, userWithBookings] = await Promise.all([
-    User.countDocuments(),
-    User.countDocuments({ isActive: true }),
-    User.countDocuments({ bookings: { $exists: true, $ne: [] } }),
-  ]);
+  const [totalUsers, userWithBookings, userWithoutBookings] = await Promise.all(
+    [
+      User.countDocuments(),
+      User.countDocuments({ bookings: { $exists: true, $ne: [] } }),
+      User.countDocuments({ bookings: { $exists: true, $eq: [] } }),
+    ]
+  );
 
   res.status(200).json(
     new SuccessResponse(200, "User statistics fetched successfully", [
       { title: "Total Users", stats: totalUsers },
-      { title: "Total Active", stats: activeUsers },
-      { title: "Total User with Bookings", stats: userWithBookings },
+      { title: "User with Bookings", stats: userWithBookings },
+      { title: "User without Bookings", stats: userWithoutBookings },
     ])
   );
 });
@@ -313,7 +316,10 @@ const allUsers = asyncHandler(async (req, res) => {
 // Get user details
 const getUserDetails = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const user = await User.findById(id).populate("bookings");
+  const user = await User.findById(id).populate(
+    "bookings",
+    "bookingId serviceType pickupDateTime totalAmount recievedAmount status assignedVendor createdAt"
+  );
   if (!user) {
     return next(new ErrorResponse(404, "User not found"));
   }
@@ -333,6 +339,9 @@ const bookingStats = asyncHandler(async (_, res) => {
       b.assignedVendor != null
   ).length;
   const pendingBookings = bookings.filter((b) => b.status === "pending").length;
+  const cancelledBookings = bookings.filter(
+    (b) => b.status === "cancelled"
+  ).length;
 
   res.status(200).json(
     new SuccessResponse(200, "Booking statistics fetched successfully", [
@@ -348,27 +357,35 @@ const bookingStats = asyncHandler(async (_, res) => {
         title: "Pending Bookings",
         stats: pendingBookings,
       },
+      {
+        title: "Cancelled Bookings",
+        stats: cancelledBookings,
+      },
     ])
   );
 });
 
 // get all bookings
 const allBookings = asyncHandler(async (req, res) => {
-  const { search = "", page, resultPerPage = 10 } = req.query;
+  const { search = "", status, page, resultPerPage = 10 } = req.query;
   const skip = (page - 1) * resultPerPage;
 
+  const filter = {};
+
+  if (search) {
+    filter.$or = [
+      { bookingId: { $regex: search, $options: "i" } },
+      { status: { $regex: search, $options: "i" } },
+      { carCategory: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  if (status) {
+    filter.status = status;
+  }
+
   const [bookings, totalCount] = await Promise.all([
-    Booking.find(
-      search
-        ? {
-            $or: [
-              { bookingId: { $regex: search, $options: "i" } },
-              { status: { $regex: search, $options: "i" } },
-              { carCategory: { $regex: search, $options: "i" } },
-            ],
-          }
-        : {}
-    )
+    Booking.find(filter)
       .sort({
         createdAt: -1,
       })
@@ -448,17 +465,17 @@ const getBookingDetails = asyncHandler(async (req, res, next) => {
 
 // Get vendor statistics
 const vendorStats = asyncHandler(async (_, res) => {
-  const [approved, pending, rejected] = await Promise.all([
+  const [approved, pending, isBlocked] = await Promise.all([
     Vendor.countDocuments({ isVerified: "approved" }),
     Vendor.countDocuments({ isVerified: "pending" }),
-    Vendor.countDocuments({ isVerified: "rejected" }),
+    Vendor.countDocuments({ isBlocked: true }),
   ]);
 
   res.status(200).json(
     new SuccessResponse(200, "Vendor statistics fetched successfully", [
       { title: "Total Approved", stats: approved },
       { title: "Total Pending", stats: pending },
-      { title: "Total Rejected", stats: rejected },
+      { title: "Total Blocked", stats: isBlocked },
     ])
   );
 });
@@ -473,20 +490,22 @@ const allVendors = asyncHandler(async (req, res) => {
 
   if (status) {
     filter.isVerified = status;
+    filter.isBlocked = false;
   }
 
   if (search) {
     filter.$or = [
-      { bookingId: { $regex: search, $options: "i" } },
-      { "user.name": { $regex: search, $options: "i" } },
-      { "vendor.company": { $regex: search, $options: "i" } },
+      { company: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { contactPerson: { $regex: search, $options: "i" } },
+      { contactPhone: { $regex: search, $options: "i" } },
     ];
   }
 
   const [vendors, totalCount] = await Promise.all([
-    Vendor.find(filter)
+    Vendor.find({ ...filter })
       .select(
-        "company companyType contactPerson email contactPhone isVerified createdAt"
+        "company companyType contactPerson email contactPhone isVerified isBlocked createdAt"
       )
       .populate(
         "cars",
@@ -516,7 +535,15 @@ const allVendors = asyncHandler(async (req, res) => {
 // Get vendor details
 const getVendorDetails = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const vendor = await Vendor.findById(id).populate("cars");
+  const vendor = await Vendor.findById(id)
+    .populate(
+      "cars",
+      "make model registrationNumber fuelType status isVerified "
+    )
+    .populate(
+      "bookings",
+      "bookingId serviceType pickupDateTime totalAmount recievedAmount status assignedVendor createdAt"
+    );
 
   if (!vendor) {
     return next(new ErrorResponse(404, "Vendor not found"));
@@ -791,15 +818,18 @@ const deleteCarCategory = asyncHandler(async (req, res, next) => {
 
 // Get car statistics
 const carStats = asyncHandler(async (req, res, next) => {
-  const totalCars = await Car.countDocuments();
-  const activeCars = await Car.countDocuments({ isActive: true });
-  const inactiveCars = totalCars - activeCars;
+  const cars = await Car.find();
+  const totalCars = cars.length;
+  const approvedCars = cars.filter(
+    (car) => car.isVerified === "approved"
+  ).length;
+  const pendingCars = cars.filter((car) => car.isVerified === "pending").length;
 
   res.status(200).json(
     new SuccessResponse(200, "Car statistics fetched successfully", [
       { title: "Total Cars", stats: totalCars },
-      { title: "Active Cars", stats: activeCars },
-      { title: "Inactive Cars", stats: inactiveCars },
+      { title: "Pending Cars", stats: pendingCars },
+      { title: "Approved Cars", stats: approvedCars },
     ])
   );
 });

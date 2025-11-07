@@ -224,7 +224,9 @@ const addVendorCar = asyncHandler(async (req, res, next) => {
   const vendor = await Vendor.findById(vendorId);
 
   if (!vendor.isVerified) {
-    return next(new ErrorResponse(404, "Cannot add car. Vendor not verified"));
+    return next(
+      new ErrorResponse(404, "Cannot add car. You're not verified yet.")
+    );
   }
 
   const carExists = await Car.findOne({

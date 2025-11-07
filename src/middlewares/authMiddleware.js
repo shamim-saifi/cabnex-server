@@ -39,6 +39,15 @@ const getVendorCookies = asyncHandler(async (req, _, next) => {
     return next(new ErrorResponse(401, "Not authorized"));
   }
 
+  if (!vendor.isBlocked) {
+    return next(
+      new ErrorResponse(
+        403,
+        "Your account has been blocked. Please contact support."
+      )
+    );
+  }
+
   req.vendorId = vendor._id;
 
   next();
