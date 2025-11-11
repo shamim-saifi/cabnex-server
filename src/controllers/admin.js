@@ -95,20 +95,52 @@ const updateWebsiteSettingBasics = asyncHandler(async (req, res, next) => {
       const index = parseInt(match[1], 10);
 
       // Ensure review exists
-      if (!setting.reviews[index]) continue;
+      if (setting.reviews[index]) {
+        const uploaded = await uploadToCloudinary([file]);
 
-      const uploaded = await uploadToCloudinary([file]);
+        // Delete old profile image from Cloudinary if exists
+        const existingProfile = setting.reviews[index]?.profile;
+        if (existingProfile?.public_id) {
+          await deleteFromCloudinary([existingProfile]);
+        }
 
-      // Delete old profile image from Cloudinary if exists
-      const existingProfile = setting.reviews[index]?.profile;
-      if (existingProfile?.public_id) {
-        await deleteFromCloudinary([existingProfile]);
+        setting.reviews[index].profile = {
+          url: uploaded[0].url,
+          public_id: uploaded[0].public_id,
+        };
+      } else {
+        const uploaded = await uploadToCloudinary([file]);
+        setting.reviews[index] = {
+          name:
+            req.body.reviews &&
+            req.body.reviews[index] &&
+            req.body.reviews[index].name
+              ? req.body.reviews[index].name
+              : "Anonymous",
+          role:
+            req.body.reviews &&
+            req.body.reviews[index] &&
+            req.body.reviews[index].role
+              ? req.body.reviews[index].role
+              : "Customer",
+          rating:
+            req.body.reviews &&
+            req.body.reviews[index] &&
+            req.body.reviews[index].rating
+              ? req.body.reviews[index].rating
+              : 5,
+          comment:
+            req.body.reviews &&
+            req.body.reviews[index] &&
+            req.body.reviews[index].comment
+              ? req.body.reviews[index].comment
+              : "",
+          profile: {
+            url: uploaded[0].url,
+            public_id: uploaded[0].public_id,
+          },
+        };
       }
-
-      setting.reviews[index].profile = {
-        url: uploaded[0].url,
-        public_id: uploaded[0].public_id,
-      };
     }
   }
 
