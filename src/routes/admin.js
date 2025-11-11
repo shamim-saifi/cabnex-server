@@ -15,13 +15,11 @@ import {
   bookingStats,
   carStats,
   checkAdmin,
+  createUser,
+  createVendor,
   createWebsiteSetting,
-  createWebsiteSettingFAQ,
-  createWebsiteSettingReview,
   dashboardStats,
   deleteCarCategory,
-  deleteWebsiteSettingFAQ,
-  deleteWebsiteSettingReview,
   getAllCarCategories,
   getAllCars,
   getAllTransfers,
@@ -41,8 +39,6 @@ import {
   updateCategoryFromCity,
   updateCategoryFromTransfer,
   updateWebsiteSettingBasics,
-  updateWebsiteSettingFAQ,
-  updateWebsiteSettingReview,
   userStats,
   vendorStats,
 } from "../controllers/admin.js";
@@ -62,18 +58,6 @@ router
   .route("/website-setting")
   .post(createWebsiteSetting)
   .put(upload.any(), updateWebsiteSettingBasics);
-
-router
-  .route("/website-setting/review")
-  .post(createWebsiteSettingReview)
-  .put(upload.single("profile"), updateWebsiteSettingReview)
-  .delete(deleteWebsiteSettingReview);
-
-router
-  .route("/website-setting/faq")
-  .post(createWebsiteSettingFAQ)
-  .put(updateWebsiteSettingFAQ)
-  .delete(deleteWebsiteSettingFAQ);
 
 router.get("/check", checkAdmin);
 
@@ -139,6 +123,9 @@ router
   .route("/transfers/:transferId/category/:categoryId")
   .put(updateCategoryFromTransfer)
   .patch(toggleCategoryStatusFromTransfer);
+
+router.post("/create-user", createUser);
+router.post("/create-vendor", createVendor);
 
 // Admin logout route
 router.post("/logout", adminLogout);

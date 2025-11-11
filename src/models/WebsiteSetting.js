@@ -48,10 +48,6 @@ const websiteSettingSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-    aboutUs: {
-      type: String,
-      default: "",
-    },
     socials: [socialSchema], // e.g. [{ platform: "facebook", url: "https://facebook.com" }]
     faqs: [faqSchema], // list of FAQs
     reviews: [reviewSchema], // customer reviews

@@ -27,6 +27,7 @@ const cookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
+// Get website setting
 const getWebsiteSetting = asyncHandler(async (req, res, next) => {
   const setting = await WebsiteSetting.findOne();
   if (!setting) {
@@ -39,6 +40,7 @@ const getWebsiteSetting = asyncHandler(async (req, res, next) => {
   );
 });
 
+// Create website setting
 const createWebsiteSetting = asyncHandler(async (req, res, next) => {
   const existingSetting = await WebsiteSetting.findOne();
 
@@ -57,6 +59,7 @@ const createWebsiteSetting = asyncHandler(async (req, res, next) => {
     .json(new SuccessResponse(201, "Website setting created successfully"));
 });
 
+// Update website setting basics
 const updateWebsiteSettingBasics = asyncHandler(async (req, res, next) => {
   const setting = await WebsiteSetting.findOne();
   if (!setting) {
@@ -64,7 +67,7 @@ const updateWebsiteSettingBasics = asyncHandler(async (req, res, next) => {
   }
 
   // --- Upload Logo ---
-  if (req.files?.logo) {
+  if (req.files?.logo?.[0]) {
     const logo = await uploadToCloudinary([req.files.logo[0]]);
     req.body.logo = logo[0];
     // Delete old logo from Cloudinary if exists
@@ -74,7 +77,7 @@ const updateWebsiteSettingBasics = asyncHandler(async (req, res, next) => {
   }
 
   // --- Upload Favicon ---
-  if (req.files?.favicon) {
+  if (req.files?.favicon?.[0]) {
     const favicon = await uploadToCloudinary([req.files.favicon[0]]);
     req.body.favicon = favicon[0];
     // Delete old favicon from Cloudinary if exists
@@ -83,190 +86,39 @@ const updateWebsiteSettingBasics = asyncHandler(async (req, res, next) => {
     }
   }
 
+  if (req?.files?.length) {
+    for (const file of req.files) {
+      const match = file.fieldname.match(/reviews\[(\d+)\]\[profile\]/);
+
+      if (!match) continue;
+
+      const index = parseInt(match[1], 10);
+
+      // Ensure review exists
+      if (!setting.reviews[index]) continue;
+
+      const uploaded = await uploadToCloudinary([file]);
+
+      // Delete old profile image from Cloudinary if exists
+      const existingProfile = setting.reviews[index]?.profile;
+      if (existingProfile?.public_id) {
+        await deleteFromCloudinary([existingProfile]);
+      }
+
+      setting.reviews[index].profile = {
+        url: uploaded[0].url,
+        public_id: uploaded[0].public_id,
+      };
+    }
+  }
+
   // --- Update all other fields ---
-  setting.set(req.body);
-  await setting.save();
+  if (!req.body.reviews) setting.set(req.body);
+  await setting.save({ validateBeforeSave: false });
 
   res
     .status(200)
     .json(new SuccessResponse(200, "Website setting updated successfully"));
-});
-
-const createWebsiteSettingSocial = asyncHandler(async (req, res, next) => {
-  const setting = await WebsiteSetting.findOne();
-  if (!setting) {
-    return next(new ErrorResponse(404, "Website setting not found"));
-  }
-  setting.socials.push(req.body);
-  await setting.save();
-  res
-    .status(201)
-    .json(new SuccessResponse(201, "Social link added successfully"));
-});
-const updateWebsiteSettingSocial = asyncHandler(async (req, res, next) => {
-  const setting = await WebsiteSetting.findOne();
-  if (!setting) {
-    return next(new ErrorResponse(404, "Website setting not found"));
-  }
-  const { socialId } = req.params;
-  const socialIndex = setting.socials.findIndex(
-    (soc) => soc._id.toString() === socialId
-  );
-
-  if (socialIndex === -1) {
-    return next(new ErrorResponse(404, "Social link not found"));
-  }
-
-  setting.socials[socialIndex] = {
-    ...setting.socials[socialIndex],
-    ...req.body,
-  };
-
-  await setting.save();
-
-  res
-    .status(200)
-    .json(new SuccessResponse(200, "Social link updated successfully"));
-});
-
-const deleteWebsiteSettingSocial = asyncHandler(async (req, res, next) => {
-  const setting = await WebsiteSetting.findOne();
-  if (!setting) {
-    return next(new ErrorResponse(404, "Website setting not found"));
-  }
-  const { socialId } = req.params;
-  const socialIndex = setting.socials.findIndex(
-    (soc) => soc._id.toString() === socialId
-  );
-  if (socialIndex === -1) {
-    return next(new ErrorResponse(404, "Social link not found"));
-  }
-  setting.socials.splice(socialIndex, 1);
-  await setting.save();
-  res
-    .status(200)
-    .json(new SuccessResponse(200, "Social link deleted successfully"));
-});
-
-const createWebsiteSettingReview = asyncHandler(async (req, res, next) => {
-  const setting = await WebsiteSetting.findOne();
-  if (!setting) {
-    return next(new ErrorResponse(404, "Website setting not found"));
-  }
-
-  if (req.file) {
-    const profile = await uploadToCloudinary([req.file]);
-    req.body.profile = profile[0];
-  }
-
-  setting.reviews.push(req.body);
-  await setting.save();
-  res.status(201).json(new SuccessResponse(201, "Review added successfully"));
-});
-
-const updateWebsiteSettingReview = asyncHandler(async (req, res, next) => {
-  const setting = await WebsiteSetting.findOne();
-  if (!setting) {
-    return next(new ErrorResponse(404, "Website setting not found"));
-  }
-  const { reviewId } = req.params;
-  const reviewIndex = setting.reviews.findIndex(
-    (rev) => rev._id.toString() === reviewId
-  );
-
-  if (reviewIndex === -1) {
-    return next(new ErrorResponse(404, "Review not found"));
-  }
-
-  if (req.file) {
-    const profile = await uploadToCloudinary([req.file]);
-    req.body.profile = profile[0];
-    // Delete old profile image from Cloudinary if exists
-    const existingProfile = setting.reviews[reviewIndex].profile;
-    if (existingProfile?.public_id) {
-      await deleteFromCloudinary([existingProfile]);
-    }
-  }
-
-  // Update the review with the new data
-  setting.reviews[reviewIndex] = {
-    ...setting.reviews[reviewIndex],
-    ...req.body,
-  };
-
-  await setting.save();
-
-  res.status(200).json(new SuccessResponse(200, "Review updated successfully"));
-});
-
-const deleteWebsiteSettingReview = asyncHandler(async (req, res, next) => {
-  const setting = await WebsiteSetting.findOne();
-  if (!setting) {
-    return next(new ErrorResponse(404, "Website setting not found"));
-  }
-  const { reviewId } = req.params;
-  const reviewIndex = setting.reviews.findIndex(
-    (rev) => rev._id.toString() === reviewId
-  );
-  if (reviewIndex === -1) {
-    return next(new ErrorResponse(404, "Review not found"));
-  }
-  // Delete profile image from Cloudinary if exists
-  const profile = setting.reviews[reviewIndex].profile;
-  if (profile?.public_id) {
-    await deleteFromCloudinary([profile]);
-  }
-  setting.reviews.splice(reviewIndex, 1);
-  await setting.save();
-  res.status(200).json(new SuccessResponse(200, "Review deleted successfully"));
-});
-
-const createWebsiteSettingFAQ = asyncHandler(async (req, res, next) => {
-  const setting = await WebsiteSetting.findOne();
-  if (!setting) {
-    return next(new ErrorResponse(404, "Website setting not found"));
-  }
-  setting.faqs.push(req.body);
-  await setting.save();
-  res.status(201).json(new SuccessResponse(201, "FAQ added successfully"));
-});
-
-const updateWebsiteSettingFAQ = asyncHandler(async (req, res, next) => {
-  const setting = await WebsiteSetting.findOne();
-  if (!setting) {
-    return next(new ErrorResponse(404, "Website setting not found"));
-  }
-  const { faqId } = req.params;
-  const faqIndex = setting.faqs.findIndex(
-    (faq) => faq._id.toString() === faqId
-  );
-  if (faqIndex === -1) {
-    return next(new ErrorResponse(404, "FAQ not found"));
-  }
-  // Update the FAQ with the new data
-  setting.faqs[faqIndex] = {
-    ...setting.faqs[faqIndex],
-    ...req.body,
-  };
-  await setting.save();
-  res.status(200).json(new SuccessResponse(200, "FAQ updated successfully"));
-});
-
-const deleteWebsiteSettingFAQ = asyncHandler(async (req, res, next) => {
-  const setting = await WebsiteSetting.findOne();
-  if (!setting) {
-    return next(new ErrorResponse(404, "Website setting not found"));
-  }
-  const { faqId } = req.params;
-  const faqIndex = setting.faqs.findIndex(
-    (faq) => faq._id.toString() === faqId
-  );
-  if (faqIndex === -1) {
-    return next(new ErrorResponse(404, "FAQ not found"));
-  }
-  setting.faqs.splice(faqIndex, 1);
-  await setting.save();
-  res.status(200).json(new SuccessResponse(200, "FAQ deleted successfully"));
 });
 
 // Check admin route
@@ -1218,7 +1070,53 @@ const getCityNames = asyncHandler(async (req, res) => {
     .json(new SuccessResponse(200, "Cities fetched successfully", cities));
 });
 
+const createUser = asyncHandler(async (req, res, next) => {
+  const { fullName, email, mobile, password } = req.body;
+  const userExists = await User.findOne({ $or: [{ email }, { mobile }] });
+
+  if (userExists) {
+    return next(new ErrorResponse(400, "User already exists"));
+  }
+  const user = await User.create({ fullName, email, mobile, password });
+
+  if (!user) {
+    return next(new ErrorResponse(400, "Failed to create user"));
+  }
+  res
+    .status(201)
+    .json(new SuccessResponse(201, `${user.fullName} created successfully`));
+});
+
+const createVendor = asyncHandler(async (req, res, next) => {
+  const { company, contactPerson, email, contactPhone, companyType, password } =
+    req.body;
+  const vendorExists = await Vendor.findOne({
+    $or: [{ email }, { contactPhone }],
+  });
+  if (vendorExists) {
+    return next(new ErrorResponse(400, "Vendor already exists"));
+  }
+  const vendor = await Vendor.create({
+    company,
+    contactPerson,
+    email,
+    contactPhone,
+    companyType,
+    password,
+  });
+
+  if (!vendor) {
+    return next(new ErrorResponse(400, "Failed to create vendor"));
+  }
+
+  res
+    .status(201)
+    .json(new SuccessResponse(201, `${vendor.company} created successfully`));
+});
+
 export {
+  createUser,
+  createVendor,
   getCityNames,
   getWebsiteSetting,
   updateCategoryFromTransfer,
@@ -1256,15 +1154,6 @@ export {
   updateCategoryFromCity,
   userStats,
   vendorStats,
-  createWebsiteSettingSocial,
-  updateWebsiteSettingSocial,
-  deleteWebsiteSettingSocial,
-  createWebsiteSettingReview,
-  updateWebsiteSettingReview,
-  deleteWebsiteSettingReview,
-  createWebsiteSettingFAQ,
-  updateWebsiteSettingFAQ,
-  deleteWebsiteSettingFAQ,
   createWebsiteSetting,
   updateWebsiteSettingBasics,
 };
