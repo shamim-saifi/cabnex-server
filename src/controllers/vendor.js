@@ -367,7 +367,25 @@ const vendorBookings = asyncHandler(async (req, res, next) => {
     );
 });
 
+const completeBooking = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const booking = await Booking.findOne({
+    bookingId: id,
+    assignedVendor: req.vendorId,
+  });
+
+  if (!booking) {
+    return next(new ErrorResponse(404, "Booking not found"));
+  }
+  booking.status = "completed";
+  await booking.save({ validateBeforeSave: false });
+  res
+    .status(200)
+    .json(new SuccessResponse(200, "Booking completed successfully", booking));
+});
+
 export {
+  completeBooking,
   vendorStats,
   getAVendorCar,
   addVendorCar,

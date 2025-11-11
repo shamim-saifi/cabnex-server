@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   addVendorCar,
+  completeBooking,
   dashboardStats,
   deleteVendorCar,
   forgetPassword,
@@ -55,6 +56,7 @@ router
   .delete(deleteVendorCar);
 
 router.get("/bookings", vendorBookings);
+router.put("/bookings/:id", completeBooking);
 
 router.post("/logout", logoutVendor);
 
