@@ -462,13 +462,13 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
     const updatedCategories = activeCategories.map((category) => {
       let totalAmount = 0;
 
-      const days = Math.ceil(
-        (new Date(returnDateTime) - new Date(pickupDateTime)) /
-          (1000 * 60 * 60 * 24)
-      );
+      const days =
+        Math.ceil(
+          (new Date(returnDateTime) - new Date(pickupDateTime)) /
+            (1000 * 60 * 60 * 24)
+        ) || 1;
 
-      category.baseFare =
-        category.freeKmPerDay * (days || 1) * category.perKmCharge;
+      category.baseFare = category.freeKmPerDay * days * category.perKmCharge;
 
       totalAmount += category.baseFare;
       totalAmount += category.hillCharge;
