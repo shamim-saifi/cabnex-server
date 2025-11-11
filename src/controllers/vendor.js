@@ -8,6 +8,7 @@ import {
 } from "../utils/cloudinary.js";
 import ErrorResponse from "../utils/ErrorResponse.js";
 import generateToken from "../utils/generateToken.js";
+import { vendorMonthlyBookings } from "../utils/helper.js";
 import SuccessResponse from "../utils/SuccessResponse.js";
 
 const cookieOptions = {
@@ -335,6 +336,8 @@ const dashboardStats = asyncHandler(async (req, res, next) => {
 
   const recentBookings = bookings.slice(0, 5);
 
+  const monthlyBookings = vendorMonthlyBookings(bookings, 6);
+
   res.status(200).json(
     new SuccessResponse(200, "Vendor dashboard Statistics", {
       totalCars,
@@ -344,6 +347,7 @@ const dashboardStats = asyncHandler(async (req, res, next) => {
       completedBookings,
       upcomingBookings,
       recentBookings,
+      monthlyBookings,
     })
   );
 });
@@ -367,6 +371,7 @@ const vendorBookings = asyncHandler(async (req, res, next) => {
     );
 });
 
+// Complete booking
 const completeBooking = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const booking = await Booking.findOne({

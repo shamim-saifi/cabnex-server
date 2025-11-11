@@ -4,6 +4,62 @@ export const getBase64 = (file) =>
 export const calculateTax = (amount, taxSlab) =>
   taxSlab > 0 ? (amount * taxSlab) / 100 : 0;
 
+export const vendorMonthlyBookings = (bookings, monthsToShow = 6) => {
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  if (!bookings || bookings.length === 0) {
+    // Return last N months with 0 bookings
+    const now = new Date();
+    const result = [];
+    for (let i = monthsToShow - 1; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      result.push({ month: monthNames[date.getMonth()], bookings: 0 });
+    }
+    return result;
+  }
+
+  const currentYear = new Date().getFullYear();
+
+  // Filter current year's bookings (optional, remove if you want to cross years)
+  const filtered = bookings.filter(
+    (b) => new Date(b.createdAt).getFullYear() === currentYear
+  );
+
+  // Group by month
+  const counts = Array(12).fill(0);
+  filtered.forEach((b) => {
+    const month = new Date(b.createdAt).getMonth();
+    counts[month]++;
+  });
+
+  // Get last 6 months dynamically
+  const now = new Date();
+  const result = [];
+  for (let i = monthsToShow - 1; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthIndex = date.getMonth();
+    result.push({
+      month: monthNames[monthIndex],
+      bookings: counts[monthIndex] || 0,
+    });
+  }
+
+  return result;
+};
+
 export function generateBookingChartData(bookings) {
   const now = new Date();
 
