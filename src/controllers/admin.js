@@ -218,10 +218,7 @@ const dashboardStats = asyncHandler(async (_, res, next) => {
     (b) => new Date(b.pickupDateTime) > now && b.status === "inProgress"
   );
 
-  const completedBookings = bookings.filter((b) => {
-    const returnDate = b.returnDateTime ? new Date(b.returnDateTime) : null;
-    return (returnDate && returnDate < now) || b.status === "completed";
-  });
+  const completedBookings = bookings.filter((b) => b.status === "completed");
 
   // ─────── BOOKING CHART ────────────────
   const bookingChartData = generateBookingChartData(bookings);
