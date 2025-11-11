@@ -362,16 +362,20 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
       let totalAmount = category.baseFare || 0;
 
       if (distance > category.baseKm) {
-        const extraKm = distance - category.baseKm;
-        totalAmount += extraKm * category.extraKmCharge;
+        const extraKmCharge =
+          (distance - category.baseKm) * category.perKmCharge;
+        totalAmount += extraKmCharge;
       }
 
-      totalAmount += category.hillCharge;
-      totalAmount += calculateTax(totalAmount, category.taxSlab);
+      const tax = calculateTax(totalAmount, category.taxSlab);
+
+      totalAmount += tax;
 
       return {
         ...(category.toObject?.() || category), // handle both Mongoose docs or plain JS objects
         totalAmount,
+        extraKmCharge,
+        tax,
       };
     });
 
@@ -462,38 +466,36 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
           (1000 * 60 * 60 * 24)
       );
 
-      category.baseFare = category.freeKmPerDay * days * category.perKmCharge;
+      category.baseFare =
+        category.freeKmPerDay * (days || 1) * category.perKmCharge;
 
       totalAmount += category.baseFare;
       totalAmount += category.hillCharge;
 
-      if (days && days > 0) {
-        const totalDriverAllowance = category.driverAllowance * days;
-        const totalNightCharge = category.nightCharge * (days - 1);
-        totalAmount += totalDriverAllowance + totalNightCharge;
+      const totalDriverAllowance = category.driverAllowance * days;
+      const totalNightCharge = category.nightCharge * Math.max(days - 1, 0);
+      totalAmount += totalDriverAllowance + totalNightCharge;
 
-        const extraKmCharges =
-          Math.max(0, distance - category.freeKmPerDay * days) *
-          category.extraKmCharge;
+      const extraKmCharges =
+        Math.max(0, distance - category.freeKmPerDay * days) *
+        category.extraKmCharge;
 
-        totalAmount += extraKmCharges;
+      totalAmount += extraKmCharges;
 
-        totalAmount += calculateTax(totalAmount, category.taxSlab);
+      const tax = calculateTax(totalAmount, category.taxSlab);
 
-        return {
-          ...(category.toObject?.() || category), // handle both Mongoose docs or plain JS objects
-          totalAmount,
-        };
-      } else {
-        totalAmount = distance * category.perKmCharge;
+      totalAmount += tax;
 
-        totalAmount += calculateTax(totalAmount, category.taxSlab);
-
-        return {
-          ...(category.toObject?.() || category), // handle both Mongoose docs or plain JS objects
-          totalAmount,
-        };
-      }
+      return {
+        ...(category.toObject?.() || category), // handle both Mongoose docs or plain JS objects
+        totalAmount,
+        extraKmCharges,
+        totalDriverAllowance,
+        totalNightCharge,
+        totalDays: days,
+        totalNights: Math.max(days - 1, 0),
+        tax,
+      };
     });
 
     return res.status(200).json(
@@ -519,12 +521,16 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
         const perKmTotal = rental.kilometer * category.perKmCharge;
 
         let totalAmount = Math.max(perHourTotal, perKmTotal);
+        category.baseFare = totalAmount;
 
-        totalAmount += calculateTax(totalAmount, category.taxSlab);
+        const tax = calculateTax(totalAmount, category.taxSlab);
+
+        totalAmount += tax;
 
         return {
           ...(category.toObject?.() || category), // handle both Mongoose docs or plain JS objects
           totalAmount,
+          tax,
         };
       });
 
