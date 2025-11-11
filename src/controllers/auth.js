@@ -360,11 +360,12 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
 
     const updatedCategories = activeCategories.map((category) => {
       let totalAmount = category.baseFare || 0;
+      let extraKmCharges = 0;
 
       if (distance > category.baseKm) {
-        const extraKmCharge =
-          (distance - category.baseKm) * category.perKmCharge;
-        totalAmount += extraKmCharge;
+        const extraKm = distance - category.baseKm;
+        extraKmCharges = extraKm * category.extraKmCharge;
+        totalAmount += extraKmCharges;
       }
 
       const tax = calculateTax(totalAmount, category.taxSlab);
@@ -374,7 +375,7 @@ const searchCarsForTrip = asyncHandler(async (req, res, next) => {
       return {
         ...(category.toObject?.() || category), // handle both Mongoose docs or plain JS objects
         totalAmount,
-        extraKmCharge,
+        extraKmCharges,
         tax,
       };
     });
