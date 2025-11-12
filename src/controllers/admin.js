@@ -1100,13 +1100,14 @@ const getCityNames = asyncHandler(async (req, res) => {
 });
 
 const createUser = asyncHandler(async (req, res, next) => {
-  const { fullName, email, mobile, password } = req.body;
+  const { email, mobile } = req.body;
   const userExists = await User.findOne({ $or: [{ email }, { mobile }] });
 
   if (userExists) {
     return next(new ErrorResponse(400, "User already exists"));
   }
-  const user = await User.create({ fullName, email, mobile, password });
+
+  const user = await User.create(req.body);
 
   if (!user) {
     return next(new ErrorResponse(400, "Failed to create user"));
