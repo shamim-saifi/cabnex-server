@@ -1,6 +1,13 @@
 import axios from "axios";
 
-export const sendOtpSms = async (phone, otp) => {
+/**
+ * Send OTP SMS to the given phone number
+ * @param {string} phone - Recipient's phone number
+ * @param {string} otp - One-Time Password to send
+ * @param {string} forWhat -default: "registration" -  Purpose of the OTP (e.g., login, registration, forgot password, etc.)
+ */
+
+export const sendOtpSms = async (phone, otp, forWhat = "registration") => {
   const baseUrl = process.env.NEXTINCLOUD_API;
 
   const params = {
@@ -9,7 +16,7 @@ export const sendOtpSms = async (phone, otp) => {
     apikey: process.env.NEXTINCLOUD_APIKEY,
     signature: process.env.NEXTINCLOUD_SIGNATURE,
     msgtype: "PM",
-    msgtxt: `Dear User, Welcome to Nexfleet Car Rentel! Your OTP for login is ${otp}. Valid for 5 minutes. Please do not share this OTP. Regards, Nexfleet Tech`,
+    msgtxt: `Dear User, Welcome to Nexfleet Car Rentel! Your OTP for ${forWhat} is ${otp}. Valid for 5 minutes. Please do not share this OTP. Regards, Nexfleet Tech`,
     VAR1: otp,
     entityid: process.env.NEXTINCLOUD_ENTITY_ID,
     templateid: process.env.NEXTINCLOUD_TEMPLATE_ID,

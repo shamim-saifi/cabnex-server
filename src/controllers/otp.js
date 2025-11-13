@@ -1,18 +1,16 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import ErrorResponse from "../utils/ErrorResponse.js";
+import { generateOtp } from "../utils/helper.js";
 import redis from "../utils/redisClient.js";
 import { sendOtpSms } from "../utils/smsService.js";
 import SuccessResponse from "../utils/SuccessResponse.js";
-
-// 🔹 Helper — generate random 4-digit OTP
-const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 
 /**
  * @route   POST /api/otp/send
  * @desc    Send OTP to user's phone
  */
 const sendOtp = asyncHandler(async (req, res, next) => {
-  const { phone } = req.body;
+  const { phone, forWhat } = req.body;
 
   if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
     return next(new ErrorResponse(400, "Invalid phone number"));
@@ -31,7 +29,7 @@ const sendOtp = asyncHandler(async (req, res, next) => {
     await redis.setex(`otp:${phone}`, 300, otp);
 
     // 2️⃣ Send SMS
-    await sendOtpSms(phone, otp);
+    await sendOtpSms(phone, otp, forWhat);
 
     console.log(`📤 OTP ${otp} sent to ${phone}`);
     res.status(200).json(new SuccessResponse(200, "OTP sent successfully"));
