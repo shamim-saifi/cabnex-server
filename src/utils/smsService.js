@@ -31,6 +31,7 @@ export const sendOtpSms = async (phone, otp) => {
   const url = `${baseUrl}?${queryString}`;
 
   const { data } = await axios.get(url);
+  console.log(data);
 
   return data;
 };
