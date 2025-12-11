@@ -15,6 +15,7 @@ import {
   updateDetails,
   userStats,
   verifyForgotPasswordOtp,
+  withoutPaymentBooking,
 } from "../controllers/auth.js";
 import { getAuthCookies } from "../middlewares/authMiddleware.js";
 
