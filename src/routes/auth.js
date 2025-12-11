@@ -41,6 +41,9 @@ router
 router.get("/stats", userStats);
 router.get("/bookings", getBookings);
 router.delete("/bookings/:id", cancelBooking);
+
+router.post("/bookings/without-payment", withoutPaymentBooking);
+
 router.post("/logout", logout);
 
 export default router;
